@@ -123,6 +123,31 @@ test('stays within query budget', async () => {
 });
 ```
 
+### CSRF Prevention
+```typescript
+// GUARD: CSRF token middleware for state-changing requests
+function csrfProtection(req: Request, res: Response, next: NextFunction) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  const token = req.headers['x-csrf-token'] || req.body._csrf;
+  if (!token || token !== req.session?.csrfToken) {
+    return res.status(403).json({ error: 'Invalid CSRF token' });
+  }
+  next();
+}
+// TEST:
+test('rejects POST without CSRF token', async () => {
+  const res = await request(app).post('/api/transfer').send({ amount: 100 });
+  expect(res.status).toBe(403);
+});
+test('accepts POST with valid CSRF token', async () => {
+  const agent = request.agent(app);
+  const { body } = await agent.get('/api/csrf-token');
+  const res = await agent.post('/api/transfer')
+    .set('x-csrf-token', body.token).send({ amount: 100 });
+  expect(res.status).not.toBe(403);
+});
+```
+
 ### Race Condition Prevention
 ```typescript
 // GUARD: Idempotency key

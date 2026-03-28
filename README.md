@@ -107,32 +107,31 @@ Result: User override respected. Full mode even for low-risk change.
 ## How It Works
 
 ```
-User Prompt
-    │
-    ▼
-┌─────────────────────┐
-│  Mode Selection     │  Risk classification + user language signals
-│  Quick/Standard/Full│
-└────────┬────────────┘
-         │
-    ▼─────────────────────────────────────────────┐
-    │  PHASE 1: Understand & Plan                 │
-    │  PHASE 2: Implement                         │
-    │  PHASE 3: Gate & Test (fix-guard-test loop)  │
-    │  PHASE 4: Audit (2-3 passes with loop)      │
-    │  PHASE 5: Regression & Guardrail Check      │
-    │  PHASE 6: Ready Gate (HARD STOP)            │
-    │  PHASE 7: Ship (on user approval)           │
-    └─────────────────────────────────────────────┘
+User Prompt → Mode Selection (Quick / Standard / Full)
+                     │
+    ┌────────────────┼────────────────┐
+    │                │                │
+  Quick          Standard           Full
+  4 phases       7 phases        7 + extras
+    │                │                │
+    ▼                ▼                ▼
+ Understand    1. Understand     Standard +
+ Implement     2. Implement      User checkpoint
+ Verify        3. Gate & Test    3-pass audit
+ Ship ⛔       4. Audit          Security deep dive
+               5. Regression     Mandatory guardrails
+               6. Ready Gate ⛔
+               7. Ship
 ```
 
 **Token budget (skill instruction overhead only):**
-- Quick: ~1,500 tokens
-- Standard: ~2,500 tokens
-- Full: ~4,000 tokens (loads `deep-audit.md`)
-- Deploy add-on: ~600 tokens (loads `deployment.md` once)
+- SKILL.md: ~4,900 tokens (loaded on activation for all modes)
+- Standard add-on: ~2,400 tokens (self-verification.md at Ready Gate)
+- Full add-on: ~2,100 tokens (deep-audit.md) + ~2,400 tokens (self-verification.md)
+- Deploy add-on: ~2,100 tokens (deployment.md, loaded once)
+- Quick mode: SKILL.md only — verifies inline, no extra files loaded
 
-These are the skill's own instruction costs. Total pipeline cost depends on your codebase size and number of files read.
+Total pipeline cost depends on your codebase size and number of files read.
 
 ---
 
@@ -140,7 +139,8 @@ These are the skill's own instruction costs. Total pipeline cost depends on your
 
 ```
 sdlc-autopilot/
-├── SKILL.md              # Core pipeline (~317 lines)
+├── SKILL.md              # Core pipeline (~318 lines)
+├── GUIDANCE.md           # Companion doc with diagrams and explanations
 ├── references/
 │   ├── deep-audit.md     # Security checklist + guardrail patterns (full mode only)
 │   ├── deployment.md     # All deploy targets in one file (deploy phase only)
@@ -180,7 +180,7 @@ The pipeline degrades gracefully. Even in chat-only mode, you get the structured
 ## FAQ
 
 **How much does this cost in tokens?**
-The agent loads the full SKILL.md (~4,000 tokens) on activation. Per-mode execution overhead is ~1,500 tokens (Quick), ~2,500 (Standard), or ~4,000 (Full — also loads deep-audit.md). Self-verification at the Ready Gate adds ~800 tokens. Total pipeline cost depends on your codebase — reading files, running tools, and generating code are additional. The skill never loads reference files it doesn't need.
+SKILL.md (~4,900 tokens) is loaded on activation. Reference files are loaded only when needed: self-verification.md (~2,400 tokens) at the Standard/Full Ready Gate, deep-audit.md (~2,100 tokens) in Full mode, deployment.md (~2,100 tokens) at deploy time. Quick mode loads only SKILL.md and verifies inline. Total pipeline cost depends on your codebase — reading files, running tools, and generating code are additional.
 
 **How do I know the agent actually followed the pipeline?**
 The skill has built-in self-verification. Throughout execution, the agent emits `LOG:` lines with concrete details (file names, counts, findings) so you can see what's happening in real time. At the Ready Gate, it loads `self-verification.md` and checks a compliance ledger — verifying every required step was completed. The change summary includes a "Pipeline Compliance: N/M steps" report. Missing security checks block shipping.

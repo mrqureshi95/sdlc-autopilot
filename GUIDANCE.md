@@ -16,14 +16,14 @@ flowchart LR
     B --> C["Agent loads name + description<br/>of ALL installed skills"]
     C --> D["User sends a coding prompt"]
     D --> E{"Does any skill's<br/>description match?"}
-    E -->|"YES — sdlc-autopilot's description<br/>matches virtually ALL coding tasks"| F["Agent reads SKILL.md<br/>(~317 lines of instructions)"]
+    E -->|"YES — sdlc-autopilot's description<br/>matches virtually ALL coding tasks"| F["Agent reads SKILL.md<br/>(~318 lines of instructions)"]
     E -->|NO| G["Agent uses default behavior"]
     F --> H["Pipeline begins"]
 ```
 
 The key is the **description** field in the YAML frontmatter. It's written to match every possible coding task: *"bug fixes, features, refactors, improvements, performance, security fixes, API changes, UI changes, database changes..."* — so any coding prompt triggers it.
 
-The agent only loads the full SKILL.md when triggered. This is called **progressive disclosure** — name+description are always in context (~574 chars), but the full ~317-line instruction set is loaded on-demand.
+The agent only loads the full SKILL.md when triggered. This is called **progressive disclosure** — name+description are always in context (~350 chars), but the full ~318-line instruction set (~4,900 tokens) is loaded on-demand.
 
 ---
 
@@ -316,17 +316,19 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Q["Quick Mode<br/>~1,500 tokens"] -->|"Loads"| S1["SKILL.md only"]
-    ST["Standard Mode<br/>~2,500 tokens"] -->|"Loads"| S1
-    F["Full Mode<br/>~4,000 tokens"] -->|"Loads"| S1
-    F -->|"Also loads"| DA["references/deep-audit.md<br/>(177 lines)"]
+    Q["Quick Mode<br/>SKILL.md only (~4,900 tokens)"] -->|"Loads"| S1["SKILL.md only"]
+    ST["Standard Mode<br/>~7,300 tokens"] -->|"Loads"| S1
+    ST -->|"Ready Gate"| SV["references/self-verification.md<br/>(~2,400 tokens)"]
+    F["Full Mode<br/>~9,400 tokens"] -->|"Loads"| S1
+    F -->|"Also loads"| DA["references/deep-audit.md<br/>(~2,100 tokens)"]
+    F -->|"Ready Gate"| SV
 
-    SHIP["Phase 7: Ship<br/>+~600 tokens"] -->|"Loads once"| DEP["references/deployment.md<br/>(149 lines)"]
+    SHIP["Phase 7: Ship<br/>+~2,100 tokens"] -->|"Loads once"| DEP["references/deployment.md<br/>(150 lines)"]
 
-    RULE["Max 4 files loaded<br/>per invocation"]
+    RULE["Max 3 reference files<br/>loaded beyond SKILL.md"]
 ```
 
-The agent loads the full SKILL.md (~4,000 tokens) on activation. Reference files are loaded **only when needed** — `deep-audit.md` only in Full mode Phase 4, `deployment.md` only in Phase 7, `self-verification.md` at the Ready Gate (Phase 6 / Quick Phase 4). Per-mode budgets represent the instructions the agent follows, not total read cost — total pipeline cost depends on codebase size and files read.
+SKILL.md (~4,900 tokens of content) is loaded on activation. Reference files are loaded **only when needed** — `deep-audit.md` (~2,100 tokens) only in Full mode Phase 4, `deployment.md` (~2,100 tokens) only in Phase 7, `self-verification.md` (~2,400 tokens) at the Ready Gate (Phase 6 for Standard/Full only; Quick mode verifies inline without loading it). Per-mode budgets represent the instructions the agent follows, not total read cost — total pipeline cost depends on codebase size and files read.
 
 ---
 
@@ -348,7 +350,7 @@ The pipeline never fully breaks — it degrades gracefully:
 
 ```
 sdlc-autopilot/
-├── SKILL.md                      ← Main pipeline (~317 lines, loaded on activation)
+├── SKILL.md                      ← Main pipeline (~318 lines, loaded on activation)
 ├── GUIDANCE.md                   ← This document
 ├── references/
 │   ├── deep-audit.md             ← OWASP + guardrail patterns (Full mode only)
@@ -365,7 +367,7 @@ sdlc-autopilot/
 ├── README.md / CONTRIBUTING.md / LICENSE.txt / CHANGELOG.md
 ```
 
-The entire skill is **4 files at runtime** max: `SKILL.md` (always), `deep-audit.md` (full mode), `deployment.md` (deploy phase), `self-verification.md` (ready gate).
+The entire skill is **SKILL.md + up to 3 reference files** at runtime: `deep-audit.md` (full mode), `deployment.md` (deploy phase), `self-verification.md` (Standard/Full ready gate). Quick mode loads only SKILL.md.
 
 ---
 
@@ -385,7 +387,7 @@ The skill ships with 16 evaluation scenarios covering the full spectrum:
 | 08 | User override — force full mode | Full | User override respected (low risk → full mode) |
 | 09 | Circuit breaker trigger | Standard | Fix-break spiral detection, revert behavior |
 | 10 | Null pattern — defensive coding | Standard | Null checks, type narrowing, guard pattern |
-| 11 | High risk never quick | Standard+ | Hard rule: HIGH risk rejects Quick even if user asks |
+| 11 | High risk never quick | Full | Hard rule: HIGH risk rejects Quick even if user asks; security fix → Full |
 | 12 | Mid-pipeline abort | Standard | User says "stop" mid-pipeline, changes reverted |
 | 13 | Monorepo scoped fix | Standard | Monorepo detection, scoped tests/scans |
 | 14 | Deployment phase | Standard | Deploy target detection, Phase 7 execution |
@@ -412,7 +414,7 @@ LOG: [P2.2] Step 1/2: Fixed keyboard handler in SearchPage.jsx
 ANNOUNCE: "Implementation complete. Running checks."
 ```
 
-**Self-verification** runs at the Ready Gate (Phase 6 for Standard/Full, Phase 4 for Quick). The agent loads `references/self-verification.md`, walks the execution ledger for the current mode, and checks every step was completed or has a valid skip reason. Missing security checks block shipping. Other gaps are reported to the user.
+**Self-verification** runs at the Ready Gate. For Standard/Full modes (Phase 6), the agent loads `references/self-verification.md` and walks the execution ledger. For Quick mode (Phase 4), verification runs inline — the 4-item checklist doesn't require loading a file. Missing security checks block shipping. Other gaps are reported to the user.
 
 ```
 LOG: [P6.1] Self-verification: 22/22 steps completed ✅

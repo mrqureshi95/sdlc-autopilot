@@ -31,4 +31,4 @@
 User says "ship it" → committed as `style(button): change primary color from blue to green`
 
 ## Token Cost
-~1,500 tokens total skill overhead. No audit passes. No reference files loaded.
+~4,900 tokens total skill overhead (SKILL.md only). No audit passes. No reference files loaded.

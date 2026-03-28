@@ -1,6 +1,6 @@
 ---
 name: sdlc-autopilot
-description: Full software development lifecycle orchestrator for ANY coding task. Triggers on ALL code changes — bug fixes, features, refactors, improvements, performance, security fixes, API changes, UI changes, database changes, config changes, new files, deletions, or any request to modify, create, fix, build, or ship code. This skill should activate FIRST on every coding prompt to orchestrate the full pipeline — understand, plan, implement, test, audit, guard against recurrence, and ship. It automatically discovers and delegates to other installed skills for domain expertise.
+description: "Full SDLC orchestrator for any coding task — bug fixes, features, refactors, security fixes, and more. Orchestrates the complete pipeline: understand, plan, implement, test, audit, guard against recurrence, and ship. Tailors process to risk level. Discovers and delegates to other installed skills for domain expertise."
 license: MIT
 ---
 
@@ -12,7 +12,7 @@ guarded code where every fix is protected against recurrence.
 
 **Principles:** (1) Tailored to risk, never one-size-fits-all. (2) Token-frugal — every token earns its keep. (3) User provides the prompt, everything else is automatic. (4) Fix it, guard it, test the guard, verify. (5) Respect project conventions and installed skills. (6) Fail safe — never auto-deploy, warn before committing to main/master (user can override), never expose secrets.
 
-**Token budget:** The agent loads the full SKILL.md (~4,000 tokens) on activation. Per-mode execution overhead: Quick ~1,500 tokens, Standard ~2,500 tokens, Full ~4,000 tokens (also loads deep-audit.md). Deploy add-on ~600 tokens (loads deployment.md once). Self-verification add-on ~800 tokens (loaded at Ready Gate). These budgets represent the instructions the agent follows per mode, not including user code reading or tool calls. Max 4 reference files loaded per invocation (SKILL.md + deep-audit.md + deployment.md + self-verification.md). Delegated skill files do not count toward this limit.
+**Token budget:** SKILL.md (~4,900 tokens of content) is loaded on activation. Additional reference files loaded only when needed: deep-audit.md (~2,100 tokens, full mode only), deployment.md (~2,100 tokens, deploy phase only), self-verification.md (~2,400 tokens, Standard/Full ready gate only; Quick mode verifies inline). Max 3 reference files loaded per invocation beyond SKILL.md. Delegated skill files do not count toward this limit.
 
 ---
 
@@ -58,6 +58,7 @@ This is the core innovation. It applies to EVERY issue — the original request 
 **Hard rules:**
 - HIGH risk can NEVER be Quick mode, even if user asks. Explain why and offer Standard as the lightest option.
 - User can ALWAYS force Full mode regardless of risk level. If user says "full pipeline", "full audit", "full sdlc", or explicitly requests the complete pipeline — use Full mode even for low-risk changes.
+- Ambiguous risk (can't clearly classify) → default to Standard.
 
 ---
 
@@ -69,7 +70,7 @@ This is the core innovation. It applies to EVERY issue — the original request 
 
 **PHASE 3: VERIFY** — Run linter/formatter if available → auto-fix. Run existing test suite if available. If tests fail due to our change → fix. Quick check: does this affect anything else? ANNOUNCE: "Verified. Tests pass."
 
-**PHASE 4: SHIP** — **HARD STOP.** Self-verify: load references/self-verification.md, walk Quick ledger, flag gaps. Present one-line summary: "Changed X in file Y. Tests pass. Pipeline: N/N steps." Wait for user confirmation before proceeding. If on main/master → warn: "You are on main. Creating branch type/short-description. Say 'commit to main' to override." If user overrides → commit to main. Commit with conventional message, push to branch. Deploy if applicable.
+**PHASE 4: SHIP** — **HARD STOP.** Self-verify inline (no file load needed): confirm file read, change made, conventions followed, tests run. Present one-line summary: "Changed X in file Y. Tests pass. Pipeline: N/N steps." Wait for user confirmation before proceeding. If on main/master → warn: "You are on main. Creating branch type/short-description. Say 'commit to main' to override." If user overrides → commit to main. Commit with conventional message, push to branch. Deploy if applicable.
 
 ---
 
@@ -154,7 +155,7 @@ For each STRUCTURAL finding → apply the fix-guard-test-verify loop:
   5. Verify: run new test → must pass
 
 For each BEHAVIORAL finding → Fix + Guard + Test + Verify (skip root cause scan)
-For each COSMETIC finding → Fix only. No guardrail needed.
+For each COSMETIC finding → Fix only. No guardrail needed. (Full mode overrides this — see Full Mode Additions.)
 
 Run tests after all pass-1 fixes.
 
@@ -302,7 +303,7 @@ This skill is the orchestrator — it decides WHAT work to do and in WHAT order.
 1. **LOG lines** — emitted DURING work. Format: `LOG: [Phase.Step] Description`. Concrete details: file names, counts, findings. Every phase gets at least one LOG. If a step is skipped, LOG why. Keep under 80 chars.
 2. **ANNOUNCE lines** — emitted at END of each phase. One line, 15 words max. Phase-exit summary.
 
-**Self-verification:** At the Ready Gate (Phase 6 for Standard/Full, Phase 4 for Quick), load references/self-verification.md and check the execution ledger. The agent verifies it actually performed every required step for the chosen mode. Gaps are reported to the user. Missing security checks block shipping.
+**Self-verification:** At the Ready Gate (Phase 6 for Standard/Full), load references/self-verification.md and check the execution ledger. Quick mode verifies inline (4 items — no file load needed). The agent verifies it actually performed every required step for the chosen mode. Gaps are reported to the user. Missing security checks block shipping.
 
 **Examples:**
 ```

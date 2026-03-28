@@ -97,9 +97,10 @@ No match → skip deploy, note in summary.
 **Detect:** `Dockerfile` or `docker-compose.yml` or `docker-compose.yaml` or `compose.yml` or `compose.yaml`
 
 ### Docker Compose (preferred if compose file exists)
-**Deploy:** `docker-compose up -d --build`
-**Rollback:** `docker-compose down && git checkout HEAD~1 -- docker-compose.yml Dockerfile && docker-compose up -d`
-**Health:** `docker-compose ps` — all services should show "Up". Then: `docker inspect --format='{{.State.Health.Status}}' $CONTAINER` if HEALTHCHECK defined.
+**Detect compose file:** Check in order: `docker-compose.yml`, `docker-compose.yaml`, `compose.yml`, `compose.yaml`. Use whichever exists as `$COMPOSE_FILE`.
+**Deploy:** `docker compose -f $COMPOSE_FILE up -d --build` (use `docker-compose` if `docker compose` not available)
+**Rollback:** `docker compose -f $COMPOSE_FILE down && git stash && docker compose -f $COMPOSE_FILE up -d` — uses stash to avoid destructive checkout. Alternatively, redeploy the previous git tag/commit.
+**Health:** `docker compose -f $COMPOSE_FILE ps` — all services should show "Up". Then: `docker inspect --format='{{.State.Health.Status}}' $CONTAINER` if HEALTHCHECK defined.
 
 ### Docker (standalone)
 **Build:** `docker build -t $IMAGE_NAME:$TAG .`

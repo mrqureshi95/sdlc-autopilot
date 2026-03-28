@@ -8,7 +8,7 @@
 - Phase 4 audit reframed as explicit checklists (correctness + security) instead of open-ended review
 - Convergence shortcut: pass 1 no longer gates pass 2 thoroughness — correctness and security are independent concerns
 - Phase 3/4 scope clarified: Phase 4 audits the full diff for issues beyond the original request
-- "Max 3 skill files" changed to max 4 reference files (added self-verification.md); delegated skill files don't count
+- "Max 3 skill files" changed to max 3 reference files beyond SKILL.md (added self-verification.md); delegated skill files don't count
 - Guard step clarified for features (edge case coverage, not recurrence prevention) and checks for existing guardrails before adding duplicates
 - Graceful degradation entry renamed from "Large context window" to "Context pressure" with 30% threshold
 

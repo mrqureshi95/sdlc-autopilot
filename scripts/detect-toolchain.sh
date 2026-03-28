@@ -113,16 +113,16 @@ elif file_exists "netlify.toml" || file_exists "_redirects"; then DEPLOY_TARGET=
 elif file_exists "Dockerfile" || file_exists "docker-compose.yml" || file_exists "docker-compose.yaml" || file_exists "compose.yml" || file_exists "compose.yaml"; then DEPLOY_TARGET="docker";
 elif file_exists "serverless.yml"; then DEPLOY_TARGET="serverless";
 elif file_exists "template.yaml" && grep -q "AWSTemplateFormatVersion" template.yaml 2>/dev/null; then DEPLOY_TARGET="sam";
-elif dir_exists ".git" && git remote 2>/dev/null | grep -q .; then DEPLOY_TARGET="git";
+elif dir_exists ".git" && cmd_exists git && git remote 2>/dev/null | grep -q .; then DEPLOY_TARGET="git";
 fi
 
 # Git status
 GIT_STATUS="null"
 GIT_BRANCH="null"
-if dir_exists ".git"; then
+if dir_exists ".git" && cmd_exists git; then
   GIT_STATUS="initialized"
   # Sanitize branch name: whitelist only safe chars for JSON output
-  GIT_BRANCH=$(git branch --show-current 2>/dev/null | sed 's/[^a-zA-Z0-9._\/-]//g' || echo "null")
+  GIT_BRANCH=$(git branch --show-current 2>/dev/null | sed 's/[^a-zA-Z0-9._\/-]//g' || true)
   [ -z "$GIT_BRANCH" ] && GIT_BRANCH="null"
 fi
 

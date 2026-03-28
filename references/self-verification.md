@@ -1,6 +1,6 @@
 # Self-Verification — Pipeline Compliance Check
 
-Loaded at Ready Gate (Phase 6) and Quick mode Phase 4. The agent checks its own execution ledger against the expected process for the chosen mode.
+Loaded at Ready Gate (Phase 6) for Standard and Full modes. Quick mode verifies inline without loading this file — its 4-item checklist is simple enough to check mentally.
 
 ---
 

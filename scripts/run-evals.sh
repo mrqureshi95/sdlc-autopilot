@@ -137,7 +137,7 @@ echo "$EVAL_IDS" | while IFS=' ' read -r id name fixture mode assertion_count; d
 
   # Check for test files if mode is standard or full
   if [ "$mode" = "standard" ] || [ "$mode" = "full" ]; then
-    TEST_COUNT=$(find "$FIXTURE_PATH" -type f -path "*__tests__*" -o -type f -name "*.test.*" -o -type f -name "*.spec.*" | wc -l | tr -d ' ')
+    TEST_COUNT=$(find "$FIXTURE_PATH" -type f \( -path "*__tests__*" -o -name "*.test.*" -o -name "*.spec.*" -o -name "test_*.py" -o -path "*/tests/*.py" \) | wc -l | tr -d ' ')
     if [ "$TEST_COUNT" -gt 0 ]; then
       inc_pass "Has $TEST_COUNT test file(s)"
     else

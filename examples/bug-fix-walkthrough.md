@@ -76,4 +76,4 @@ Branch: fix/search-keyboard-overlap
 ```
 
 ## Token Cost
-~2,500 tokens total skill overhead.
+~7,300 tokens total skill overhead (SKILL.md + self-verification.md at Ready Gate).
