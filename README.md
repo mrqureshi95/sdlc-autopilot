@@ -1,6 +1,25 @@
 # sdlc-autopilot
 
-**Full software development lifecycle execution for AI coding agents.** One messy prompt in, deploy-ready tested and guarded code out.
+**Full SDLC execution for AI coding agents.** One messy prompt in → deploy-ready, tested, guarded code out.
+
+```bash
+npx skills add mrqureshi95/sdlc-autopilot
+```
+
+Works with **Claude Code · GitHub Copilot · Cursor · Windsurf · Codex · Cline · Roo · Amp** and [30+ other agents](https://skills.sh).
+
+---
+
+### What you get
+
+- **Automatic risk-based pipeline** — Quick (60s) · Standard (7 phases) · Full (security deep dive)
+- **Fix-Guard-Test-Verify loop** — every fix is permanent, not just patched
+- **Self-auditing** — 2-pass audit catches what implementation missed
+- **Guardrail generation** — prevents the same class of bug from recurring
+- **Root cause scanning** — finds the same pattern elsewhere in your codebase
+- **Self-verification** — the agent proves it followed the pipeline
+- **Zero config** — auto-detects your toolchain, test framework, and deploy target
+- **Graceful degradation** — works even without tests, linters, or shell access
 
 ---
 
@@ -202,6 +221,14 @@ Never. It always stops at the ready gate (Phase 6) and waits for explicit user a
 
 **Can it create PRs?**
 Yes. Say "create PR" at the ready gate and it creates a PR with the change summary as the description using `gh`.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on adding evals, extending the audit, and submitting PRs.
+
+If you find this useful, a ⭐ on the repo helps others discover it.
 
 ---
 

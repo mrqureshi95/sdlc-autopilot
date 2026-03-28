@@ -1,6 +1,6 @@
 ---
 name: sdlc-autopilot
-description: "Full SDLC orchestrator for any coding task — bug fixes, features, refactors, security fixes, and more. Orchestrates the complete pipeline: understand, plan, implement, test, audit, guard against recurrence, and ship. Tailors process to risk level. Discovers and delegates to other installed skills for domain expertise."
+description: "Full SDLC pipeline for AI coding agents — turns any prompt into tested, audited, guarded code. Three risk-based modes (Quick/Standard/Full) covering understand, plan, implement, test, audit, guard, and ship. Core innovation: Fix-Guard-Test-Verify loop ensures every fix is permanent by adding guardrails, testing them, and scanning for the same pattern elsewhere. Self-audits in 2 passes (correctness + security), auto-detects toolchains, writes tests even without a framework, and degrades gracefully. Works with any language, any agent."
 license: MIT
 ---
 
