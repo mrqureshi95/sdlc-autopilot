@@ -10,7 +10,7 @@ Transforms any rough prompt into a full SDLC execution — tailored to risk.
 The user types one messy sentence. You deliver deploy-ready, tested, audited,
 guarded code where every fix is protected against recurrence.
 
-**Principles:** (1) Tailored to risk, never one-size-fits-all. (2) Token-frugal — every token earns its keep. (3) User provides the prompt, everything else is automatic. (4) Fix it, guard it, test the guard, verify. (5) Respect project conventions and installed skills. (6) Fail safe — never auto-deploy, never commit to main, never expose secrets.
+**Principles:** (1) Tailored to risk, never one-size-fits-all. (2) Token-frugal — every token earns its keep. (3) User provides the prompt, everything else is automatic. (4) Fix it, guard it, test the guard, verify. (5) Respect project conventions and installed skills. (6) Fail safe — never auto-deploy, never commit directly to main/master, never expose secrets.
 
 **Token budget:** Quick ~1,500 tokens (SKILL.md only). Standard ~2,500 tokens (SKILL.md only). Full ~4,000 tokens (SKILL.md + deep-audit.md). Deploy add-on ~600 tokens (deployment.md, loaded once). Max 3 files loaded per invocation.
 
@@ -51,11 +51,13 @@ This is the core innovation. It applies to EVERY issue — the original request 
 
 **Signal 2 — User language:**
 - "just", "quick", "simple", "only" → bias Quick
-- "careful", "thorough", "full", "make sure" → bias Full
+- "careful", "thorough", "full", "make sure", "full pipeline", "full audit", "full sdlc" → Full mode
 - No signal → use risk classification
 - Explicit override always wins
 
-**Hard rule:** HIGH risk can NEVER be Quick mode, even if user asks. Explain why and offer Standard as the lightest option.
+**Hard rules:**
+- HIGH risk can NEVER be Quick mode, even if user asks. Explain why and offer Standard as the lightest option.
+- User can ALWAYS force Full mode regardless of risk level. If user says "full pipeline", "full audit", "full sdlc", or explicitly requests the complete pipeline — use Full mode even for low-risk changes.
 
 ---
 
@@ -67,7 +69,7 @@ This is the core innovation. It applies to EVERY issue — the original request 
 
 **PHASE 3: VERIFY** — Run linter/formatter if available → auto-fix. Run existing test suite if available. If tests fail due to our change → fix. Quick check: does this affect anything else?
 
-**PHASE 4: SHIP** — Present one-line summary: "Changed X in file Y. Tests pass." Wait for user confirmation. Commit with conventional message, push to branch. Deploy if applicable.
+**PHASE 4: SHIP** — Present one-line summary: "Changed X in file Y. Tests pass." Wait for user confirmation. Verify current branch is not main/master (if on main/master → create and switch to type/short-description branch). Commit with conventional message, push to branch. Deploy if applicable.
 
 ---
 
@@ -99,7 +101,7 @@ ANNOUNCE: "[intent type] identified. Implementing [N] steps."
 ### PHASE 2: IMPLEMENT
 Why: Disciplined implementation prevents scope drift and keeps changes reviewable.
 
-1. Create branch: type/short-description (if git repo)
+1. Git branch check (if git repo): verify current branch is NOT main/master. If on main/master → create branch type/short-description and switch to it. If already on a feature/dev/other branch → stay on it and commit there.
 2. Execute plan step-by-step
 3. Delegate to relevant installed skills: scan available_skills — if ANY skill's description matches the domain, read its SKILL.md and follow it. Always scan. Never hardcode.
 4. Follow existing project conventions
