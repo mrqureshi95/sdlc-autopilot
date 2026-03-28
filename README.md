@@ -126,11 +126,13 @@ User Prompt
     └─────────────────────────────────────────────┘
 ```
 
-**Token budget:**
-- Quick: ~1,500 tokens overhead
-- Standard: ~2,500 tokens overhead
-- Full: ~4,000 tokens overhead (loads `deep-audit.md`)
+**Token budget (skill instruction overhead only):**
+- Quick: ~1,500 tokens
+- Standard: ~2,500 tokens
+- Full: ~4,000 tokens (loads `deep-audit.md`)
 - Deploy add-on: ~600 tokens (loads `deployment.md` once)
+
+These are the skill's own instruction costs. Total pipeline cost depends on your codebase size and number of files read.
 
 ---
 
@@ -160,10 +162,23 @@ sdlc-autopilot/
 
 ---
 
+## Agent Compatibility
+
+This skill works with any agent that supports the Agent Skills specification — but the experience varies by agent mode:
+
+| Mode | Agents | What You Get |
+|---|---|---|
+| **Full benefit (agentic)** | Claude Code, Copilot agent mode, Cursor (with terminal), Codex, Cline, Roo | All phases work including automated linting, test execution, git operations, deployment |
+| **Partial benefit (chat)** | Copilot chat, Cursor chat-only, Windsurf chat | Planning, implementation, audit, and guard phases work; automated gates are written out as commands for you to run manually |
+
+The pipeline degrades gracefully. Even in chat-only mode, you get the structured SDLC process, guardrail generation, and audit passes — you just run the terminal commands yourself.
+
+---
+
 ## FAQ
 
 **How much does this cost in tokens?**
-Quick mode adds ~1,500 tokens overhead. Standard adds ~2,500. Full adds ~4,000. The skill never loads reference files it doesn't need.
+The skill instruction overhead is ~1,500 tokens (Quick), ~2,500 (Standard), or ~4,000 (Full). Total pipeline cost depends on your codebase — reading files, running tools, and generating code are additional. The skill never loads reference files it doesn't need.
 
 **What languages does it support?**
 Any. The pipeline is language-agnostic. The scripts auto-detect toolchains for JS/TS, Python, Go, Rust, Ruby, and Java. For others, the pipeline still works — it just skips automated gates.
@@ -173,6 +188,9 @@ Yes. Edit `references/deep-audit.md` to add security patterns, guardrail templat
 
 **What if my project has no tests or linter?**
 The pipeline degrades gracefully. Tests are still written (in logical format for the language). Gates are skipped. A test framework suggestion is provided but doesn't block the pipeline.
+
+**Does it work with monorepos?**
+Yes. It auto-detects monorepo structures (`packages/`, `apps/`, `pnpm-workspace.yaml`, `lerna.json`) and scopes tests and root cause scans to affected packages only.
 
 **Does it auto-deploy?**
 Never. It always stops at the ready gate (Phase 6) and waits for explicit user approval. Deployment only happens on "ship it" / "deploy" / "push".

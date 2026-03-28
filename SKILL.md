@@ -10,9 +10,9 @@ Transforms any rough prompt into a full SDLC execution — tailored to risk.
 The user types one messy sentence. You deliver deploy-ready, tested, audited,
 guarded code where every fix is protected against recurrence.
 
-**Principles:** (1) Tailored to risk, never one-size-fits-all. (2) Token-frugal — every token earns its keep. (3) User provides the prompt, everything else is automatic. (4) Fix it, guard it, test the guard, verify. (5) Respect project conventions and installed skills. (6) Fail safe — never auto-deploy, never commit directly to main/master, never expose secrets.
+**Principles:** (1) Tailored to risk, never one-size-fits-all. (2) Token-frugal — every token earns its keep. (3) User provides the prompt, everything else is automatic. (4) Fix it, guard it, test the guard, verify. (5) Respect project conventions and installed skills. (6) Fail safe — never auto-deploy, warn before committing to main/master (user can override), never expose secrets.
 
-**Token budget:** Quick ~1,500 tokens (SKILL.md only). Standard ~2,500 tokens (SKILL.md only). Full ~4,000 tokens (SKILL.md + deep-audit.md). Deploy add-on ~600 tokens (deployment.md, loaded once). Max 3 files loaded per invocation.
+**Token budget (skill instruction overhead only — excludes user code reading and tool calls):** Quick ~1,500 tokens. Standard ~2,500 tokens. Full ~4,000 tokens (loads deep-audit.md). Deploy add-on ~600 tokens (loads deployment.md once). Max 3 skill files loaded per invocation.
 
 ---
 
@@ -69,7 +69,7 @@ This is the core innovation. It applies to EVERY issue — the original request 
 
 **PHASE 3: VERIFY** — Run linter/formatter if available → auto-fix. Run existing test suite if available. If tests fail due to our change → fix. Quick check: does this affect anything else?
 
-**PHASE 4: SHIP** — Present one-line summary: "Changed X in file Y. Tests pass." Wait for user confirmation. Verify current branch is not main/master (if on main/master → create and switch to type/short-description branch). Commit with conventional message, push to branch. Deploy if applicable.
+**PHASE 4: SHIP** — Present one-line summary: "Changed X in file Y. Tests pass." Wait for user confirmation. If on main/master → warn: "You are on main. Creating branch type/short-description. Say 'commit to main' to override." If user overrides → commit to main. Commit with conventional message, push to branch. Deploy if applicable.
 
 ---
 
@@ -82,7 +82,7 @@ Why: Misunderstanding the request wastes everything downstream.
 2. Scan codebase for relevant context:
    - List file tree (2 levels, respect .gitignore)
    - Grep for keywords from user's prompt
-   - Read ONLY directly relevant files (cap: ~10 files)
+   - Read ONLY directly relevant files (cap: ~10 files). If files exceed ~30% of available context → read key sections or summarize rather than loading in full. Prioritize files directly mentioned in the user's prompt.
    - Check for project rules: .cursorrules, CONTRIBUTING.md, .editorconfig
 3. Scan available skills for ANY installed skill relevant to this change
 4. Generate Implementation Brief:
@@ -101,7 +101,7 @@ ANNOUNCE: "[intent type] identified. Implementing [N] steps."
 ### PHASE 2: IMPLEMENT
 Why: Disciplined implementation prevents scope drift and keeps changes reviewable.
 
-1. Git branch check (if git repo): verify current branch is NOT main/master. If on main/master → create branch type/short-description and switch to it. If already on a feature/dev/other branch → stay on it and commit there.
+1. Git branch check (if git repo): if on main/master → warn: "You are on main. Creating branch type/short-description. Say 'commit to main' to override." If user overrides → stay on main. If already on a feature/dev/other branch → stay on it and commit there.
 2. Execute plan step-by-step
 3. Delegate to relevant installed skills: scan available_skills — if ANY skill's description matches the domain, read its SKILL.md and follow it. Always scan. Never hardcode.
 4. Follow existing project conventions
@@ -137,12 +137,14 @@ ANNOUNCE: "N tests pass (M new, K guardrail). Linting clean."
 ### PHASE 4: AUDIT (2 passes)
 Why: Self-review catches what implementation missed. The loop ensures every finding is permanently fixed, not just patched.
 
-**Pass 1 — Correctness Audit:** Review ONLY the diff (changed lines + immediate context).
-- Does the change satisfy each acceptance criterion?
-- Logic errors: off-by-one, null deref, race conditions?
-- Error handling: are failure paths covered?
-- If API changed: grep for callers, verify compatibility
-- Hardcoded values that should be config/env vars?
+**Pass 1 — Correctness Checklist:** Walk through each item mechanically against the diff. Do NOT rely on general "does this look right" judgment — check each item explicitly.
+- [ ] Each acceptance criterion satisfied? (check one by one)
+- [ ] Off-by-one errors in loops/indices?
+- [ ] Null/undefined access on any new variable or return value?
+- [ ] Race conditions on shared state or async operations?
+- [ ] Error handling: every new call site has a failure path?
+- [ ] If API changed: grep for callers, verify compatibility
+- [ ] Hardcoded values that should be config/env vars?
 
 For each STRUCTURAL finding → apply the fix-guard-test-verify loop:
   1. Fix it
@@ -156,11 +158,15 @@ For each COSMETIC finding → Fix only. No guardrail needed.
 
 Run tests after all pass-1 fixes.
 
-**Pass 2 — Quality & Security Audit:** Review ONLY the diff again.
-- Security: input validation, injection risk, auth checks, secrets, XSS/CSRF, dependency trust
-- Performance: N+1 queries, re-renders, memory leaks (obvious only)
-- Accessibility (UI changes): keyboard nav, ARIA labels
-- Code quality: naming, DRY, complexity (don't gold-plate)
+**Pass 2 — Security & Quality Checklist:** Walk through each item mechanically against the diff.
+- [ ] Input validation: every new user input sanitized/validated?
+- [ ] Injection: raw SQL, eval(), innerHTML, dangerouslySetInnerHTML?
+- [ ] Auth: new endpoints have auth + authz checks?
+- [ ] Secrets: no hardcoded secrets, tokens, API keys?
+- [ ] XSS/CSRF: output encoding, CSRF tokens on mutations?
+- [ ] Performance: N+1 queries, unnecessary re-renders, memory leaks (obvious only)?
+- [ ] Accessibility (UI changes): keyboard nav, ARIA labels?
+- [ ] Code quality: naming, DRY, complexity (don't gold-plate)?
 
 For each finding → same fix-guard-test-verify loop with same proportionality rules. Security findings ALWAYS get the full loop regardless of severity. Security guardrails are mandatory.
 
@@ -212,9 +218,22 @@ ANNOUNCE: "Ready gate passed. Summary above."
 
 ### PHASE 7: SHIP
 1. Git: stage, commit with conventional message, push branch
-2. If "create PR": create PR with change summary as description
-3. If deployment needed: read references/deployment.md for detected platform, deploy. If deploy fails → attempt rollback using platform's rollback command (see deployment.md), capture error, DO NOT retry, present to user
-4. Post-deploy: health check if platform supports it
+2. If "create PR": create PR with structured description:
+   ```
+   ## What
+   [1-2 sentence summary from Phase 6]
+   ## Why
+   [Root cause / motivation]
+   ## Testing
+   [N new tests, M guardrail tests, what they cover]
+   ## Guardrails Added
+   [List of guardrails preventing recurrence]
+   ## Breaking Changes
+   [None / list of breaking changes]
+   ```
+3. Update CHANGELOG if project has one: add entry under `[Unreleased]` using conventional commit type (Added/Fixed/Changed/Security). Auto-generate from the commit message.
+4. If deployment needed: read references/deployment.md for detected platform, deploy. If deploy fails → attempt rollback using platform's rollback command (see deployment.md), capture error, DO NOT retry, present to user
+5. Post-deploy: health check if platform supports it
 
 ANNOUNCE: "Pushed to [branch]. Commit: [hash]."
 
@@ -242,11 +261,17 @@ This skill is the orchestrator — it decides WHAT work to do and in WHAT order.
 
 **Rules:** Always check the installed skills list — never assume what the user has. If none are relevant → proceed with your own best judgment. If multiple are relevant → use each for its respective domain. This skill remains in control of the overall pipeline (phases, testing, auditing). Delegated skills handle domain-specific best practices.
 
+**Fallback:** If the installed skills list is not available in context (some agents don't expose it) → skip delegation entirely and proceed with your own best judgment. Do not error or stall.
+
 ---
 
 ## Critical Behaviors
 
 **Follow-ups:** Pipeline shipped → start NEW pipeline. During ready gate → treat as "change X," return to Phase 2. "revert"/"undo" → git revert, done. Each invocation is STATELESS.
+
+**Mid-pipeline abort:** If user says "stop", "undo everything", or "cancel" at ANY point mid-pipeline → immediately stop. If changes were made to files: `git checkout -- .` to discard all unstaged changes (or `git stash` if user might want them later). If a branch was created: offer to delete it. Confirm: "All changes reverted. Back to clean state."
+
+**Monorepos:** If workspace root contains `packages/`, `apps/`, `libs/`, `pnpm-workspace.yaml`, or `lerna.json` → treat as monorepo. Phase 1: identify affected package(s) only. Phase 3: run tests ONLY in affected packages (`--filter`, `--scope`, or `cd packages/X && npm test`). Root cause scans: search within the affected package first, then cross-package only if the pattern is in shared code.
 
 **Large codebases (10,000+ files):** List top-level tree (2 levels). Grep for keywords. Read ONLY grep results + direct imports. Cap ~10 files in Phase 1. Root cause scans use grep only — never scan entire codebase file-by-file.
 

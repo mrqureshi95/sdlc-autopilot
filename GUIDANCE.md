@@ -108,7 +108,7 @@ flowchart TD
     end
 
     subgraph P2["PHASE 2: IMPLEMENT"]
-        P2a["Git branch check: on main/master?<br/>→ create & switch to type/short-description<br/>Otherwise → stay on current branch"] --> P2b["Execute plan step-by-step"]
+        P2a["Git branch check: on main/master?<br/>→ Warn user, offer override<br/>Otherwise → stay on current branch"] --> P2b["Execute plan step-by-step"]
         P2b --> P2c["Delegate to installed skills<br/>for domain-specific work"]
         P2c --> P2d["Follow project conventions"]
     end
@@ -123,9 +123,9 @@ flowchart TD
     end
 
     subgraph P4["PHASE 4: AUDIT (2 passes)"]
-        P4a["Pass 1: Correctness<br/>• Acceptance criteria met?<br/>• Logic errors?<br/>• Error handling?<br/>• API callers updated?"] --> P4b["Each finding →<br/>Fix-Guard-Test-Verify loop"]
+        P4a["Pass 1: Correctness CHECKLIST<br/>• Each acceptance criterion met?<br/>• Off-by-one errors?<br/>• Null/undefined access?<br/>• Race conditions?<br/>• Error handling on failure paths?"] --> P4b["Each finding →<br/>Fix-Guard-Test-Verify loop"]
         P4b --> P4c["Run tests after pass 1"]
-        P4c --> P4d["Pass 2: Quality & Security<br/>• Input validation, injection<br/>• N+1, re-renders, memory leaks<br/>• Accessibility<br/>• Code quality"]
+        P4c --> P4d["Pass 2: Security & Quality CHECKLIST<br/>• Input validation?<br/>• Injection risks (SQL, XSS)?<br/>• Auth on new endpoints?<br/>• Secrets exposed?"]
         P4d --> P4e["Each finding →<br/>Fix-Guard-Test-Verify loop"]
         P4e --> P4f["Run tests after pass 2"]
     end
@@ -144,9 +144,10 @@ flowchart TD
 
     subgraph P7["PHASE 7: SHIP"]
         P7a["Git: commit + push branch"] --> P7b{"Create PR?"}
-        P7b -->|YES| P7c["gh pr create"]
+        P7b -->|YES| P7c["gh pr create with<br/>structured PR template"]
         P7b -->|NO| P7d{"Deploy?"}
-        P7c --> P7d
+        P7c --> P7c2["Update CHANGELOG<br/>if project has one"]
+        P7c2 --> P7d
         P7d -->|YES| P7e["Auto-detect platform<br/>→ deploy"]
         P7e --> P7f["Health check"]
     end
@@ -275,6 +276,7 @@ flowchart TD
 - If **multiple** are relevant → use each for its respective domain
 - sdlc-autopilot remains in control of the **overall pipeline** (phases, testing, auditing)
 - Delegated skills handle **domain-specific best practices** only
+- **Fallback:** If the installed skills list is not available in context (some agents don't expose it) → skip delegation entirely and proceed with own judgment. Do not error or stall.
 
 ---
 
@@ -301,7 +303,7 @@ flowchart TD
 | Rule | Description |
 |---|---|
 | **Never auto-deploy to production** | Preview/staging deploys are acceptable; production requires explicit user approval |
-| **Never commit directly to main/master** | Stay on the current branch; if on main/master, create a feature branch first |
+| **Warn before committing to main/master** | If on main/master, warn and offer to create a branch; user can say "commit to main" to override |
 | **Never expose secrets** | Reference by variable name only (`$VAR_NAME`), never include values |
 | **Circuit breaker on fix spirals** | If fixing a finding causes a NEW test failure → revert immediately |
 | **Gate cap** | Maximum 3 auto-fix cycles, then proceed |
@@ -324,7 +326,7 @@ flowchart TD
     RULE["Max 3 files loaded<br/>per invocation"]
 ```
 
-Reference files are loaded **only when needed** — `deep-audit.md` only in Full mode Phase 4, `deployment.md` only in Phase 7. This keeps token usage efficient.
+Reference files are loaded **only when needed** — `deep-audit.md` only in Full mode Phase 4, `deployment.md` only in Phase 7. Token budgets are **skill instruction overhead only** — total pipeline cost depends on codebase size and files read.
 
 ---
 
@@ -339,6 +341,7 @@ The pipeline never fully breaks — it degrades gracefully:
 | **No linter/formatter/typechecker** | Skip automated gates. Suggest setup, don't insist. |
 | **No git** | Skip branching/commits/push. All other phases still happen. |
 | **Large context window** | Summarize earlier phases, don't load reference files unless full mode, cap file reading. |
+| **Context window too small** | If files exceed ~30% of context, summarize rather than load in full. Prioritize files from user's prompt. |
 
 ---
 
@@ -405,6 +408,8 @@ Each phase ends with a one-line, 15-word-max announcement:
 | Behavior | Rule |
 |---|---|
 | **Follow-ups** | Pipeline shipped → start NEW pipeline. During ready gate → "change X" returns to Phase 2. |
+| **Mid-pipeline abort** | User says "stop"/"undo everything" → discard all changes (`git checkout -- .`), offer to delete created branch. |
+| **Monorepos** | Auto-detect (`packages/`, `apps/`, `pnpm-workspace.yaml`, `lerna.json`). Scope tests and root cause scans to affected packages. |
 | **Large codebases** | Cap ~10 files in Phase 1. Root cause scans use grep only — never scan entire codebase file-by-file. |
 | **Project rules conflict** | SDLC provides the PROCESS. Project rules provide the STANDARDS. Style conflicts → project rules win. Process conflicts → SDLC wins. |
 | **Can't find the bug** | Report what was searched. Ask ONE specific question. Never guess. |
