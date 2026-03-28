@@ -56,8 +56,11 @@ elif command -v black >/dev/null 2>&1 && [ -f "pyproject.toml" ]; then
     report_fail "Formatter (Black)" "Failed. Run: black ."
   fi
 elif [ -f "go.mod" ] && command -v gofmt >/dev/null 2>&1; then
-  gofmt -w . 2>/dev/null
-  report_pass "gofmt"
+  if gofmt -w . 2>/dev/null; then
+    report_pass "gofmt"
+  else
+    report_fail "Formatter (gofmt)" "Failed. Run: gofmt -w ."
+  fi
 fi
 
 # --- Type Checker ---

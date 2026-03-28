@@ -110,9 +110,9 @@ fi
 if file_exists "supabase/config.toml"; then DEPLOY_TARGET="supabase";
 elif file_exists "vercel.json" || dir_exists ".vercel"; then DEPLOY_TARGET="vercel";
 elif file_exists "netlify.toml" || file_exists "_redirects"; then DEPLOY_TARGET="netlify";
+elif file_exists "Dockerfile" || file_exists "docker-compose.yml" || file_exists "docker-compose.yaml"; then DEPLOY_TARGET="docker";
 elif file_exists "serverless.yml"; then DEPLOY_TARGET="serverless";
 elif file_exists "template.yaml" && grep -q "AWSTemplateFormatVersion" template.yaml 2>/dev/null; then DEPLOY_TARGET="sam";
-elif file_exists "Dockerfile" || file_exists "docker-compose.yml" || file_exists "docker-compose.yaml"; then DEPLOY_TARGET="docker";
 elif dir_exists ".git" && git remote 2>/dev/null | grep -q .; then DEPLOY_TARGET="git";
 fi
 
