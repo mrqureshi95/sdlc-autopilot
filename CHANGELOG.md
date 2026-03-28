@@ -8,11 +8,15 @@
 - Phase 4 audit reframed as explicit checklists (correctness + security) instead of open-ended review
 - Convergence shortcut: pass 1 no longer gates pass 2 thoroughness — correctness and security are independent concerns
 - Phase 3/4 scope clarified: Phase 4 audits the full diff for issues beyond the original request
-- "Max 3 skill files" clarified as max 3 reference files; delegated skill files don't count
+- "Max 3 skill files" changed to max 4 reference files (added self-verification.md); delegated skill files don't count
 - Guard step clarified for features (edge case coverage, not recurrence prevention) and checks for existing guardrails before adding duplicates
 - Graceful degradation entry renamed from "Large context window" to "Context pressure" with 30% threshold
 
 ### Added
+- **Self-verification at Ready Gate:** Agent loads `references/self-verification.md` and walks a pipeline compliance ledger to verify every required step was completed. Missing security checks block shipping. Compliance score reported in change summary.
+- **Progress logging (LOG lines):** Agent emits `LOG: [Phase.Step] Description` lines during work with concrete details (file names, counts, findings). ANNOUNCE lines remain as phase-exit summaries.
+- `references/self-verification.md` — execution ledger templates for Quick/Standard/Full modes, compliance check algorithm, LOG format spec
+- Eval 16: self-verification and logging behavior
 - Mid-pipeline abort: `git checkout -- .` to discard changes, offer branch deletion on "stop"/"undo"/"cancel"
 - Monorepo awareness: auto-detect and scope tests/scans to affected packages
 - PR description template: structured ## What/Why/Testing/Guardrails/Breaking Changes
@@ -42,3 +46,6 @@
 - Circuit breaker for fix-induced regressions
 - Guardrail completeness check in Phase 5
 - Proportionality rules (structural/behavioral/cosmetic)
+
+[Unreleased]: https://github.com/mrqureshi95/sdlc-autopilot/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/mrqureshi95/sdlc-autopilot/releases/tag/v1.0.0

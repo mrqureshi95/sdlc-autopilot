@@ -140,15 +140,17 @@ These are the skill's own instruction costs. Total pipeline cost depends on your
 
 ```
 sdlc-autopilot/
-├── SKILL.md              # Core pipeline (~300 lines)
+├── SKILL.md              # Core pipeline (~317 lines)
 ├── references/
 │   ├── deep-audit.md     # Security checklist + guardrail patterns (full mode only)
-│   └── deployment.md     # All deploy targets in one file (deploy phase only)
+│   ├── deployment.md     # All deploy targets in one file (deploy phase only)
+│   └── self-verification.md  # Pipeline compliance ledger (ready gate)
 ├── scripts/
 │   ├── detect-toolchain.sh  # Auto-detect project tools (optional)
-│   └── run-gates.sh         # Lint + typecheck + test runner (optional)
+│   ├── run-gates.sh         # Lint + typecheck + test runner (optional)
+│   └── run-evals.sh         # Validate eval fixtures (dev only)
 ├── evals/
-│   ├── evals.json        # 10 eval test cases
+│   ├── evals.json        # 16 eval test cases
 │   └── fixtures/         # Minimal project fixtures for each test
 ├── examples/
 │   ├── quick-change-walkthrough.md
@@ -178,7 +180,10 @@ The pipeline degrades gracefully. Even in chat-only mode, you get the structured
 ## FAQ
 
 **How much does this cost in tokens?**
-The skill instruction overhead is ~1,500 tokens (Quick), ~2,500 (Standard), or ~4,000 (Full). Total pipeline cost depends on your codebase — reading files, running tools, and generating code are additional. The skill never loads reference files it doesn't need.
+The agent loads the full SKILL.md (~4,000 tokens) on activation. Per-mode execution overhead is ~1,500 tokens (Quick), ~2,500 (Standard), or ~4,000 (Full — also loads deep-audit.md). Self-verification at the Ready Gate adds ~800 tokens. Total pipeline cost depends on your codebase — reading files, running tools, and generating code are additional. The skill never loads reference files it doesn't need.
+
+**How do I know the agent actually followed the pipeline?**
+The skill has built-in self-verification. Throughout execution, the agent emits `LOG:` lines with concrete details (file names, counts, findings) so you can see what's happening in real time. At the Ready Gate, it loads `self-verification.md` and checks a compliance ledger — verifying every required step was completed. The change summary includes a "Pipeline Compliance: N/M steps" report. Missing security checks block shipping.
 
 **What languages does it support?**
 Any. The pipeline is language-agnostic. The scripts auto-detect toolchains for JS/TS, Python, Go, Rust, Ruby, and Java. For others, the pipeline still works — it just skips automated gates.

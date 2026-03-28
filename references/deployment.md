@@ -9,7 +9,7 @@ Check in order. First match wins:
 2. `supabase/config.toml` → Supabase
 3. `vercel.json` OR `.vercel/` → Vercel
 4. `netlify.toml` OR `_redirects` → Netlify
-5. `Dockerfile` OR `docker-compose.yml` → Docker
+5. `Dockerfile` OR `docker-compose.yml` OR `compose.yml` → Docker
 6. `serverless.yml` OR `template.yaml` (SAM) → AWS
 7. `.git/` with remote → Generic Git (push only)
 No match → skip deploy, note in summary.
@@ -94,7 +94,7 @@ No match → skip deploy, note in summary.
 
 ## Docker
 
-**Detect:** `Dockerfile` or `docker-compose.yml` or `docker-compose.yaml`
+**Detect:** `Dockerfile` or `docker-compose.yml` or `docker-compose.yaml` or `compose.yml` or `compose.yaml`
 
 ### Docker Compose (preferred if compose file exists)
 **Deploy:** `docker-compose up -d --build`

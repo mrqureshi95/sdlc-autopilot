@@ -77,7 +77,7 @@ Every guardrail pattern MUST include a paired test.
 
 ## Development Principles
 
-- **SKILL.md stays under 300 lines.** If you need to add content, find something to cut.
+- **SKILL.md stays under 320 lines.** If you need to add content, find something to cut.
 - **Reference files are loaded conditionally.** Don't add content to SKILL.md that's only needed in one mode.
 - **Every guardrail has a test.** No exceptions.
 - **Token efficiency matters.** Every line earns its keep.

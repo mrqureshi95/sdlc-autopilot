@@ -42,11 +42,11 @@ fi
 
 # Linter
 LINTER="null"
-if file_exists ".eslintrc.json" || file_exists ".eslintrc.js" || file_exists ".eslintrc.yml" || file_exists "eslint.config.js" || file_exists "eslint.config.mjs"; then
+if file_exists ".eslintrc.json" || file_exists ".eslintrc.js" || file_exists ".eslintrc.yml" || file_exists "eslint.config.js" || file_exists "eslint.config.mjs" || file_exists "eslint.config.ts"; then
   LINTER="eslint"
 elif file_exists ".flake8" || { file_exists "setup.cfg" && grep -q "flake8" setup.cfg 2>/dev/null; }; then
   LINTER="flake8"
-elif file_exists "pyproject.toml" && grep -q "ruff" pyproject.toml 2>/dev/null; then
+elif file_exists "ruff.toml" || { file_exists "pyproject.toml" && grep -q '\[tool\.ruff\]' pyproject.toml 2>/dev/null; }; then
   LINTER="ruff"
 elif file_exists ".golangci.yml" || file_exists ".golangci.yaml"; then
   LINTER="golangci-lint"
@@ -56,9 +56,9 @@ fi
 
 # Formatter
 FORMATTER="null"
-if file_exists ".prettierrc" || file_exists ".prettierrc.json" || file_exists ".prettierrc.js" || file_exists "prettier.config.js"; then
+if file_exists ".prettierrc" || file_exists ".prettierrc.json" || file_exists ".prettierrc.js" || file_exists "prettier.config.js" || file_exists ".prettierrc.yaml" || file_exists ".prettierrc.toml"; then
   FORMATTER="prettier"
-elif file_exists "pyproject.toml" && grep -q "black" pyproject.toml 2>/dev/null; then
+elif file_exists "pyproject.toml" && grep -q '\[tool\.black\]' pyproject.toml 2>/dev/null; then
   FORMATTER="black"
 elif [ "$LANGUAGE" = "go" ]; then
   FORMATTER="gofmt"
@@ -110,7 +110,7 @@ fi
 if file_exists "supabase/config.toml"; then DEPLOY_TARGET="supabase";
 elif file_exists "vercel.json" || dir_exists ".vercel"; then DEPLOY_TARGET="vercel";
 elif file_exists "netlify.toml" || file_exists "_redirects"; then DEPLOY_TARGET="netlify";
-elif file_exists "Dockerfile" || file_exists "docker-compose.yml" || file_exists "docker-compose.yaml"; then DEPLOY_TARGET="docker";
+elif file_exists "Dockerfile" || file_exists "docker-compose.yml" || file_exists "docker-compose.yaml" || file_exists "compose.yml" || file_exists "compose.yaml"; then DEPLOY_TARGET="docker";
 elif file_exists "serverless.yml"; then DEPLOY_TARGET="serverless";
 elif file_exists "template.yaml" && grep -q "AWSTemplateFormatVersion" template.yaml 2>/dev/null; then DEPLOY_TARGET="sam";
 elif dir_exists ".git" && git remote 2>/dev/null | grep -q .; then DEPLOY_TARGET="git";

@@ -80,17 +80,18 @@
       "id": 6,
       "name": "audit-finding-gets-guarded",
       "prompt": "fix the timeout error in the data fetch function",
-      "project_setup": "Function with timeout bug AND a hidden XSS vulnerability in adjacent component using dangerouslySetInnerHTML",
+      "project_setup": "Function with timeout bug AND two hidden XSS vulnerabilities: DataDisplay.jsx uses dangerouslySetInnerHTML with unsanitized server data (stored XSS), SearchResults.jsx uses innerHTML with unsanitized user query (reflected XSS)",
       "fixture": "fixtures/06-audit-finding",
       "expected_mode": "standard",
       "assertions": [
         "Original timeout bug fixed with guardrail and test",
-        "XSS vulnerability discovered during audit",
-        "XSS fix applied with full guard-test-verify loop",
-        "XSS guardrail added (input sanitization or CSP)",
-        "XSS guardrail test written and passes",
-        "Root cause scan for XSS pattern in codebase",
-        "Change summary lists both original fix and audit finding"
+        "Stored XSS vulnerability discovered in DataDisplay.jsx (dangerouslySetInnerHTML)",
+        "Reflected XSS vulnerability discovered in SearchResults.jsx (innerHTML)",
+        "Both XSS fixes applied with full guard-test-verify loop",
+        "XSS guardrail added (input sanitization or safe rendering utility)",
+        "XSS guardrail tests written and pass for both vectors",
+        "Root cause scan for XSS patterns (innerHTML, dangerouslySetInnerHTML) in codebase",
+        "Change summary lists original fix and both audit findings"
       ]
     },
     {
@@ -148,6 +149,101 @@
         "All 3 other locations fixed",
         "Guardrail added for null check pattern (type narrowing or utility)",
         "Tests cover all 4 locations"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "high-risk-never-quick",
+      "prompt": "just quickly fix the SQL injection in the login route",
+      "project_setup": "Express API with SQL injection vulnerability. User says 'just quickly' but the change is HIGH risk (security). Hard rule: HIGH risk can NEVER be Quick mode.",
+      "fixture": "fixtures/11-high-risk-never-quick",
+      "expected_mode": "standard",
+      "assertions": [
+        "Mode is NOT quick despite user saying 'just quickly'",
+        "Mode is standard or full (HIGH risk floor)",
+        "Agent explains why quick mode was rejected for this change",
+        "SQL injection is fixed with parameterized queries",
+        "Security guardrail added",
+        "Full guard-test-verify loop applied (security finding)"
+      ]
+    },
+    {
+      "id": 12,
+      "name": "mid-pipeline-abort",
+      "prompt": "refactor the user service to use async/await",
+      "project_setup": "Node.js service using callbacks. User will say 'stop' or 'cancel' mid-pipeline to test abort behavior.",
+      "fixture": "fixtures/12-mid-pipeline-abort",
+      "expected_mode": "standard",
+      "assertions": [
+        "Pipeline begins normally (Phase 1 or 2)",
+        "On user 'stop': all file changes are discarded (git checkout -- . or equivalent)",
+        "If branch was created: user is offered branch deletion",
+        "Confirmation message: 'All changes reverted. Back to clean state.'",
+        "No partial changes left in working directory"
+      ]
+    },
+    {
+      "id": 13,
+      "name": "monorepo-scoped-fix",
+      "prompt": "fix the broken import in the dashboard package",
+      "project_setup": "Monorepo with packages/ directory containing dashboard and shared packages. Tests should only run in affected package.",
+      "fixture": "fixtures/13-monorepo",
+      "expected_mode": "standard",
+      "assertions": [
+        "Monorepo structure detected (packages/ directory)",
+        "Affected package identified (dashboard)",
+        "Tests run only in affected package, not entire monorepo",
+        "Root cause scan searches within affected package first",
+        "Import fix applied correctly"
+      ]
+    },
+    {
+      "id": 14,
+      "name": "deployment-phase",
+      "prompt": "fix the broken health check endpoint and deploy",
+      "project_setup": "Express app with Vercel deployment config. Health check returns wrong status code.",
+      "fixture": "fixtures/14-deployment",
+      "expected_mode": "standard",
+      "assertions": [
+        "Health check bug fixed",
+        "Deploy target detected (Vercel)",
+        "Ready gate presents summary and waits for user approval",
+        "On 'ship it': commit and push to branch",
+        "deployment.md loaded for deploy phase",
+        "Deploy command uses correct Vercel CLI syntax"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "python-bug-fix",
+      "prompt": "fix the off-by-one error in the pagination function",
+      "project_setup": "Python Flask API with pagination bug. Tests use pytest.",
+      "fixture": "fixtures/15-python",
+      "expected_mode": "standard",
+      "assertions": [
+        "Python project detected",
+        "Pytest test runner identified",
+        "Off-by-one error fixed in pagination logic",
+        "Regression test written using pytest conventions",
+        "Guardrail added for boundary condition",
+        "Root cause scan for similar off-by-one patterns"
+      ]
+    },
+    {
+      "id": 16,
+      "name": "self-verification-and-logging",
+      "prompt": "fix the broken API endpoint that returns 500 on empty input",
+      "project_setup": "Express API with missing input validation. Standard mode bug fix to verify the agent emits LOG lines during work, ANNOUNCE lines at phase exits, and runs self-verification at the Ready Gate.",
+      "fixture": "fixtures/16-self-verification",
+      "expected_mode": "standard",
+      "assertions": [
+        "LOG lines emitted during each phase with concrete details",
+        "ANNOUNCE lines emitted at end of each phase",
+        "Self-verification performed at Ready Gate (Phase 6)",
+        "Pipeline compliance reported in change summary (e.g., '22/22 steps')",
+        "self-verification.md loaded at Ready Gate",
+        "No security steps skipped without blocking",
+        "Fix-Guard-Test-Verify loop applied to original request"
       ]
     }
   ]

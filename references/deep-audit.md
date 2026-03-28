@@ -69,7 +69,8 @@ test('safeQuery rejects interpolation', () => {
 
 ### XSS Prevention
 ```typescript
-// GUARD: Sanitize HTML
+// GUARD: Sanitize HTML — minimal entity encoding for simple text output.
+// For rich HTML content, use a dedicated library (e.g., DOMPurify, sanitize-html).
 function sanitizeHtml(input: string): string {
   return input.replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));

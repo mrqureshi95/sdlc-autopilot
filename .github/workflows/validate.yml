@@ -1,0 +1,35 @@
+name: Validate Evals
+
+on:
+  push:
+    paths:
+      - 'evals/**'
+      - 'scripts/**'
+  pull_request:
+    paths:
+      - 'evals/**'
+      - 'scripts/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate eval fixtures
+        run: sh scripts/run-evals.sh
+
+      - name: Check shell script syntax
+        run: |
+          sh -n scripts/detect-toolchain.sh
+          sh -n scripts/run-gates.sh
+          sh -n scripts/run-evals.sh
+
+      - name: Check SKILL.md line count
+        run: |
+          lines=$(wc -l < SKILL.md)
+          if [ "$lines" -gt 320 ]; then
+            echo "SKILL.md is $lines lines (limit: 320)"
+            exit 1
+          fi
+          echo "SKILL.md is $lines lines — OK"

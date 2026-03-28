@@ -16,14 +16,14 @@ flowchart LR
     B --> C["Agent loads name + description<br/>of ALL installed skills"]
     C --> D["User sends a coding prompt"]
     D --> E{"Does any skill's<br/>description match?"}
-    E -->|"YES — sdlc-autopilot's description<br/>matches virtually ALL coding tasks"| F["Agent reads SKILL.md<br/>(~305 lines of instructions)"]
+    E -->|"YES — sdlc-autopilot's description<br/>matches virtually ALL coding tasks"| F["Agent reads SKILL.md<br/>(~317 lines of instructions)"]
     E -->|NO| G["Agent uses default behavior"]
     F --> H["Pipeline begins"]
 ```
 
 The key is the **description** field in the YAML frontmatter. It's written to match every possible coding task: *"bug fixes, features, refactors, improvements, performance, security fixes, API changes, UI changes, database changes..."* — so any coding prompt triggers it.
 
-The agent only loads the full SKILL.md when triggered. This is called **progressive disclosure** — name+description are always in context (~574 chars), but the full ~305-line instruction set is loaded on-demand.
+The agent only loads the full SKILL.md when triggered. This is called **progressive disclosure** — name+description are always in context (~574 chars), but the full ~317-line instruction set is loaded on-demand.
 
 ---
 
@@ -323,10 +323,10 @@ flowchart TD
 
     SHIP["Phase 7: Ship<br/>+~600 tokens"] -->|"Loads once"| DEP["references/deployment.md<br/>(149 lines)"]
 
-    RULE["Max 3 files loaded<br/>per invocation"]
+    RULE["Max 4 files loaded<br/>per invocation"]
 ```
 
-Reference files are loaded **only when needed** — `deep-audit.md` only in Full mode Phase 4, `deployment.md` only in Phase 7. Token budgets are **skill instruction overhead only** — total pipeline cost depends on codebase size and files read.
+The agent loads the full SKILL.md (~4,000 tokens) on activation. Reference files are loaded **only when needed** — `deep-audit.md` only in Full mode Phase 4, `deployment.md` only in Phase 7, `self-verification.md` at the Ready Gate (Phase 6 / Quick Phase 4). Per-mode budgets represent the instructions the agent follows, not total read cost — total pipeline cost depends on codebase size and files read.
 
 ---
 
@@ -348,28 +348,30 @@ The pipeline never fully breaks — it degrades gracefully:
 
 ```
 sdlc-autopilot/
-├── SKILL.md                      ← Main pipeline (~305 lines, loaded on activation)
+├── SKILL.md                      ← Main pipeline (~317 lines, loaded on activation)
 ├── GUIDANCE.md                   ← This document
 ├── references/
 │   ├── deep-audit.md             ← OWASP + guardrail patterns (Full mode only)
-│   └── deployment.md             ← 6 platform deploy guides (Phase 7 only)
+│   ├── deployment.md             ← 6 platform deploy guides (Phase 7 only)
+│   └── self-verification.md      ← Pipeline compliance ledger + LOG format (Ready Gate)
 ├── scripts/
 │   ├── detect-toolchain.sh       ← Auto-detect language/framework/tools → JSON
-│   └── run-gates.sh              ← Run linter/formatter/typechecker/tests
+│   ├── run-gates.sh              ← Run linter/formatter/typechecker/tests
+│   └── run-evals.sh              ← Validate eval fixtures are well-formed
 ├── evals/
-│   ├── evals.json                ← 10 test scenarios for validation
-│   └── fixtures/01-10/           ← Realistic codebases with planted bugs
+│   ├── evals.json                ← 16 test scenarios for validation
+│   └── fixtures/01-16/           ← Realistic codebases with planted bugs
 ├── examples/                     ← Walkthroughs showing each mode
 ├── README.md / CONTRIBUTING.md / LICENSE.txt / CHANGELOG.md
 ```
 
-The entire skill is **3 files at runtime** max: `SKILL.md` (always), `deep-audit.md` (full mode), `deployment.md` (deploy phase).
+The entire skill is **4 files at runtime** max: `SKILL.md` (always), `deep-audit.md` (full mode), `deployment.md` (deploy phase), `self-verification.md` (ready gate).
 
 ---
 
 ## Evals (Validation Test Suite)
 
-The skill ships with 10 evaluation scenarios covering the full spectrum:
+The skill ships with 16 evaluation scenarios covering the full spectrum:
 
 | # | Scenario | Mode | What It Tests |
 |---|---|---|---|
@@ -378,26 +380,46 @@ The skill ships with 10 evaluation scenarios covering the full spectrum:
 | 03 | Feature — dark mode toggle | Standard | New feature, state management, test writing |
 | 04 | Refactor — auth service extraction | Standard | Behavior-preserving refactor, contract tests |
 | 05 | Security — SQL injection | Full | OWASP audit, parameterized queries, full guard loop |
-| 06 | Audit finding — race condition | Standard | Concurrent data fetching, idempotency guard |
+| 06 | Audit finding — timeout + XSS | Standard | Timeout bug fix, hidden XSS discovery during audit |
 | 07 | No tooling project | Standard | Graceful degradation, manual test format |
-| 08 | User override — force quick on high risk | Standard | Hard rule enforcement (rejects Quick for HIGH risk) |
+| 08 | User override — force full mode | Full | User override respected (low risk → full mode) |
 | 09 | Circuit breaker trigger | Standard | Fix-break spiral detection, revert behavior |
 | 10 | Null pattern — defensive coding | Standard | Null checks, type narrowing, guard pattern |
+| 11 | High risk never quick | Standard+ | Hard rule: HIGH risk rejects Quick even if user asks |
+| 12 | Mid-pipeline abort | Standard | User says "stop" mid-pipeline, changes reverted |
+| 13 | Monorepo scoped fix | Standard | Monorepo detection, scoped tests/scans |
+| 14 | Deployment phase | Standard | Deploy target detection, Phase 7 execution |
+| 15 | Python bug fix | Standard | Non-JS language, pytest, off-by-one error |
+| 16 | Self-verification & logging | Standard | LOG/ANNOUNCE lines, pipeline compliance check at Ready Gate |
 
 ---
 
-## Announcements
+## Progress Logging & Self-Verification
 
-Each phase ends with a one-line, 15-word-max announcement:
+The skill uses two types of user-facing output to keep users informed:
+
+**LOG lines** — emitted DURING work. Format: `LOG: [Phase.Step] Description`. Concrete details: file names, counts, findings.
+
+**ANNOUNCE lines** — emitted at the END of each phase. One line, 15 words max. Phase-exit summary.
 
 ```
-"Bug fix identified. Implementing 3 steps."
-"Implementation complete. Running checks."
-"4 tests pass (2 new, 1 guardrail). Linting clean."
-"Audit done. 2 issues: fixed 2, guarded 2, tested 2."
-"All 6 tests pass. 2 guardrails verified."
-"Ready gate passed. Summary above."
-"Pushed to fix/search-keyboard. Commit: a1b2c3d."
+LOG: [P1.1] Parsed intent: bug-fix in SearchPage component
+LOG: [P1.2] Scanned 3 files: SearchPage.jsx, SearchPage.css, test file
+ANNOUNCE: "Bug fix identified. Implementing 2 steps."
+
+LOG: [P2.1] On branch fix/search-keyboard — safe to commit
+LOG: [P2.2] Step 1/2: Fixed keyboard handler in SearchPage.jsx
+ANNOUNCE: "Implementation complete. Running checks."
+```
+
+**Self-verification** runs at the Ready Gate (Phase 6 for Standard/Full, Phase 4 for Quick). The agent loads `references/self-verification.md`, walks the execution ledger for the current mode, and checks every step was completed or has a valid skip reason. Missing security checks block shipping. Other gaps are reported to the user.
+
+```
+LOG: [P6.1] Self-verification: 22/22 steps completed ✅
+ANNOUNCE: "Ready gate passed. Summary above."
+
+## Pipeline Compliance
+✅ 22/22 steps completed
 ```
 
 ---

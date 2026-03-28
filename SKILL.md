@@ -12,7 +12,7 @@ guarded code where every fix is protected against recurrence.
 
 **Principles:** (1) Tailored to risk, never one-size-fits-all. (2) Token-frugal — every token earns its keep. (3) User provides the prompt, everything else is automatic. (4) Fix it, guard it, test the guard, verify. (5) Respect project conventions and installed skills. (6) Fail safe — never auto-deploy, warn before committing to main/master (user can override), never expose secrets.
 
-**Token budget (skill instruction overhead only — excludes user code reading and tool calls):** Quick ~1,500 tokens. Standard ~2,500 tokens. Full ~4,000 tokens (loads deep-audit.md). Deploy add-on ~600 tokens (loads deployment.md once). Max 3 reference files loaded per invocation (SKILL.md + deep-audit.md + deployment.md). Delegated skill files do not count toward this limit.
+**Token budget:** The agent loads the full SKILL.md (~4,000 tokens) on activation. Per-mode execution overhead: Quick ~1,500 tokens, Standard ~2,500 tokens, Full ~4,000 tokens (also loads deep-audit.md). Deploy add-on ~600 tokens (loads deployment.md once). Self-verification add-on ~800 tokens (loaded at Ready Gate). These budgets represent the instructions the agent follows per mode, not including user code reading or tool calls. Max 4 reference files loaded per invocation (SKILL.md + deep-audit.md + deployment.md + self-verification.md). Delegated skill files do not count toward this limit.
 
 ---
 
@@ -63,13 +63,13 @@ This is the core innovation. It applies to EVERY issue — the original request 
 
 ## Quick Mode (4 Phases)
 
-**PHASE 1: UNDERSTAND** — Read relevant file(s) (usually 1-2). Confirm what needs to change. If ambiguous → ask ONE question, then proceed.
+**PHASE 1: UNDERSTAND** — Read relevant file(s) (usually 1-2). Confirm what needs to change. If ambiguous → ask ONE question, then proceed. ANNOUNCE: "Quick fix: [brief description]."
 
-**PHASE 2: IMPLEMENT** — Make the change following existing conventions. Delegate to relevant installed skills if applicable. Run the fix-guard-test loop (lightweight): fix the issue, add a brief code comment if non-obvious. Guardrail and root cause scan are OPTIONAL in quick mode.
+**PHASE 2: IMPLEMENT** — Make the change following existing conventions. Delegate to relevant installed skills if applicable. Run the fix-guard-test loop (lightweight): fix the issue, add a brief code comment if non-obvious. Guardrail and root cause scan are OPTIONAL in quick mode. ANNOUNCE: "Change applied."
 
-**PHASE 3: VERIFY** — Run linter/formatter if available → auto-fix. Run existing test suite if available. If tests fail due to our change → fix. Quick check: does this affect anything else?
+**PHASE 3: VERIFY** — Run linter/formatter if available → auto-fix. Run existing test suite if available. If tests fail due to our change → fix. Quick check: does this affect anything else? ANNOUNCE: "Verified. Tests pass."
 
-**PHASE 4: SHIP** — **HARD STOP.** Present one-line summary: "Changed X in file Y. Tests pass." Wait for user confirmation before proceeding. If on main/master → warn: "You are on main. Creating branch type/short-description. Say 'commit to main' to override." If user overrides → commit to main. Commit with conventional message, push to branch. Deploy if applicable.
+**PHASE 4: SHIP** — **HARD STOP.** Self-verify: load references/self-verification.md, walk Quick ledger, flag gaps. Present one-line summary: "Changed X in file Y. Tests pass. Pipeline: N/N steps." Wait for user confirmation before proceeding. If on main/master → warn: "You are on main. Creating branch type/short-description. Say 'commit to main' to override." If user overrides → commit to main. Commit with conventional message, push to branch. Deploy if applicable.
 
 ---
 
@@ -174,8 +174,6 @@ Run tests after all pass-2 fixes.
 
 CIRCUIT BREAKER: If fixing a finding causes a NEW test failure → REVERT THE FIX. Note in summary as "identified but not fixed — requires manual review." Do not enter a fix-break spiral.
 
-CONVERGENCE SHORTCUT: If pass 1 AND pass 2 both find zero issues → skip pass 3 convergence in Full mode. Pass 1 results do NOT gate pass 2 thoroughness — correctness and security are independent concerns.
-
 ANNOUNCE: "Audit done. N issues: fixed M, guarded K, tested J."
 
 ### PHASE 5: REGRESSION & FINAL VERIFICATION
@@ -195,18 +193,21 @@ Why: This is the last line of defense. Verify everything works together and no g
 ANNOUNCE: "All N tests pass. M guardrails verified. Docs updated."
 
 ### PHASE 6: READY GATE
-Why: The user sees exactly what happened and decides what's next.
+Why: The user sees exactly what happened and decides what's next. This phase also verifies the pipeline itself was followed correctly.
 
-Generate change summary:
-- What was done (1-2 sentences)
-- Files changed (list with one-line descriptions)
-- Tests: N new, M updated, K guardrail tests
-- Issues found during audit: N total (fixed and guarded: M, fixed only/cosmetic: K, deferred/circuit breaker: J with descriptions)
-- Root cause patterns found elsewhere: N (with brief list)
-- Guardrails added: N (with brief descriptions)
-- Dependencies added / Migrations created (if any)
-- Pre-generated conventional commit message
-- Pre-generated branch name
+1. **Self-verification:** Read references/self-verification.md. Walk the execution ledger for the current mode. Check every step was completed or has a valid skip reason. Report compliance: "Pipeline Compliance: N/M steps completed." If security steps were skipped → BLOCK shipping and run them first. Other gaps → warn and let user decide.
+
+2. **Generate change summary:**
+   - What was done (1-2 sentences)
+   - Files changed (list with one-line descriptions)
+   - Tests: N new, M updated, K guardrail tests
+   - Issues found during audit: N total (fixed and guarded: M, fixed only/cosmetic: K, deferred/circuit breaker: J with descriptions)
+   - Root cause patterns found elsewhere: N (with brief list)
+   - Guardrails added: N (with brief descriptions)
+   - Pipeline compliance: N/M steps (with any gaps listed)
+   - Dependencies added / Migrations created (if any)
+   - Pre-generated conventional commit message
+   - Pre-generated branch name
 
 **HARD STOP. Wait for user:**
 - "ship it" / "push" / "deploy" / "looks good" → Phase 7
@@ -214,6 +215,7 @@ Generate change summary:
 - "cancel" / "revert" → discard branch
 - "create PR" → Phase 7 with PR
 
+LOG: "[P6.1] Self-verification: N/M steps completed [✅|⚠️]"
 ANNOUNCE: "Ready gate passed. Summary above."
 
 ### PHASE 7: SHIP
@@ -245,7 +247,7 @@ Identical to Standard with these additions:
 
 **PHASE 1:** User checkpoint — present the plan, wait for explicit approval before implementing. Critical-risk changes never skip this.
 
-**PHASE 4:** Add Pass 3 — Convergence: re-review ALL changes from passes 1-2. Verify every structural fix has guardrail AND test. If structural issues remain → fix with full loop (max 3 retries). If stuck → escalate to user. Security Deep Dive: read references/deep-audit.md, OWASP Top 10 review, auth/authz flow verification, data handling (encryption, PII, logging), dependency vulnerability assessment. Every security finding gets FULL loop — no exceptions.
+**PHASE 4:** Add Pass 3 — Convergence: re-review ALL changes from passes 1-2. Verify every structural fix has guardrail AND test. If structural issues remain → fix with full loop (max 3 retries). If stuck → escalate to user. Security Deep Dive: read references/deep-audit.md, OWASP Top 10 review, auth/authz flow verification, data handling (encryption, PII, logging), dependency vulnerability assessment. Every security finding gets FULL loop — no exceptions. CONVERGENCE SHORTCUT: If pass 1 AND pass 2 both find zero issues → skip pass 3. Pass 1 results do NOT gate pass 2 thoroughness — correctness and security are independent concerns.
 
 **PHASE 5:** Guardrails mandatory for ALL findings including cosmetic. Architectural guardrails encouraged (linter rules, pre-commit hooks). Root cause scan radius expanded.
 
@@ -293,13 +295,23 @@ This skill is the orchestrator — it decides WHAT work to do and in WHAT order.
 
 ---
 
-## Announcements
+## Progress Logging & Self-Verification
 
-One line max, 15 words max. Examples:
-- "Bug fix identified. Implementing 3 steps."
-- "Implementation complete. Running checks."
-- "4 tests pass (2 new, 1 guardrail). Linting clean."
-- "Audit done. 2 issues: fixed 2, guarded 2, tested 2."
-- "All 6 tests pass. 2 guardrails verified."
-- "Ready gate passed. Summary above."
-- "Pushed to fix/search-keyboard. Commit: a1b2c3d."
+**Two types of user-facing output during execution:**
+
+1. **LOG lines** — emitted DURING work. Format: `LOG: [Phase.Step] Description`. Concrete details: file names, counts, findings. Every phase gets at least one LOG. If a step is skipped, LOG why. Keep under 80 chars.
+2. **ANNOUNCE lines** — emitted at END of each phase. One line, 15 words max. Phase-exit summary.
+
+**Self-verification:** At the Ready Gate (Phase 6 for Standard/Full, Phase 4 for Quick), load references/self-verification.md and check the execution ledger. The agent verifies it actually performed every required step for the chosen mode. Gaps are reported to the user. Missing security checks block shipping.
+
+**Examples:**
+```
+LOG: [P1.1] Parsed intent: bug-fix in SearchPage component
+LOG: [P1.2] Scanned 3 files: SearchPage.jsx, SearchPage.css, test file
+ANNOUNCE: "Bug fix identified. Implementing 2 steps."
+LOG: [P2.1] On branch fix/search-keyboard — safe to commit
+LOG: [P2.2] Step 1/2: Fixed keyboard handler in SearchPage.jsx
+ANNOUNCE: "Implementation complete. Running checks."
+LOG: [P6.1] Self-verification: 22/22 steps completed ✅
+ANNOUNCE: "Ready gate passed. Summary above."
+```
