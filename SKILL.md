@@ -24,7 +24,7 @@ This is the core innovation. It applies to EVERY issue — the original request 
 
 1. **FIX** the issue. Apply the code change.
 2. **ROOT CAUSE:** Why did this happen? Is it a pattern? Grep for the same pattern elsewhere. If found → fix up to 5 occurrences, note the rest. This is a single grep — cheap, but catches systemic issues.
-3. **GUARD:** Prevent this CLASS of issue from recurring. Choose the lightest effective guardrail using this priority (use the FIRST viable):
+3. **GUARD:** Prevent this CLASS of issue from recurring. For features, focus guards on edge case coverage and contract tests rather than recurrence prevention. If a guardrail already exists for this class of issue (e.g., the project already uses parameterized queries), verify it covers the current case rather than adding a duplicate. Choose the lightest effective guardrail using this priority (use the FIRST viable):
    - Type/compiler enforcement (caught at build time)
    - Linter/static analysis rule (caught before tests)
    - Runtime assertion/invariant (caught at test/runtime)
@@ -174,7 +174,7 @@ Run tests after all pass-2 fixes.
 
 CIRCUIT BREAKER: If fixing a finding causes a NEW test failure → REVERT THE FIX. Note in summary as "identified but not fixed — requires manual review." Do not enter a fix-break spiral.
 
-CONVERGENCE SHORTCUT: If pass 1 finds zero issues → reduce pass 2 to quick security scan only.
+CONVERGENCE SHORTCUT: If pass 1 AND pass 2 both find zero issues → skip pass 3 convergence in Full mode. Pass 1 results do NOT gate pass 2 thoroughness — correctness and security are independent concerns.
 
 ANNOUNCE: "Audit done. N issues: fixed M, guarded K, tested J."
 

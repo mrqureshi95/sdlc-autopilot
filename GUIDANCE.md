@@ -145,9 +145,9 @@ flowchart TD
     subgraph P7["PHASE 7: SHIP"]
         P7a["Git: commit + push branch"] --> P7b{"Create PR?"}
         P7b -->|YES| P7c["gh pr create with<br/>structured PR template"]
-        P7b -->|NO| P7d{"Deploy?"}
-        P7c --> P7c2["Update CHANGELOG<br/>if project has one"]
-        P7c2 --> P7d
+        P7b -->|NO| P7c2["Update CHANGELOG<br/>if project has one"]
+        P7c -->  P7c2
+        P7c2 --> P7d{"Deploy?"}
         P7d -->|YES| P7e["Auto-detect platform<br/>→ deploy"]
         P7e --> P7f["Health check"]
     end
