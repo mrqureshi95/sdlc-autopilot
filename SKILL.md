@@ -12,7 +12,7 @@ guarded code where every fix is protected against recurrence.
 
 **Principles:** (1) Tailored to risk, never one-size-fits-all. (2) Token-frugal — every token earns its keep. (3) User provides the prompt, everything else is automatic. (4) Fix it, guard it, test the guard, verify. (5) Respect project conventions and installed skills. (6) Fail safe — never auto-deploy, warn before committing to main/master (user can override), never expose secrets.
 
-**Token budget (skill instruction overhead only — excludes user code reading and tool calls):** Quick ~1,500 tokens. Standard ~2,500 tokens. Full ~4,000 tokens (loads deep-audit.md). Deploy add-on ~600 tokens (loads deployment.md once). Max 3 skill files loaded per invocation.
+**Token budget (skill instruction overhead only — excludes user code reading and tool calls):** Quick ~1,500 tokens. Standard ~2,500 tokens. Full ~4,000 tokens (loads deep-audit.md). Deploy add-on ~600 tokens (loads deployment.md once). Max 3 reference files loaded per invocation (SKILL.md + deep-audit.md + deployment.md). Delegated skill files do not count toward this limit.
 
 ---
 
@@ -69,7 +69,7 @@ This is the core innovation. It applies to EVERY issue — the original request 
 
 **PHASE 3: VERIFY** — Run linter/formatter if available → auto-fix. Run existing test suite if available. If tests fail due to our change → fix. Quick check: does this affect anything else?
 
-**PHASE 4: SHIP** — Present one-line summary: "Changed X in file Y. Tests pass." Wait for user confirmation. If on main/master → warn: "You are on main. Creating branch type/short-description. Say 'commit to main' to override." If user overrides → commit to main. Commit with conventional message, push to branch. Deploy if applicable.
+**PHASE 4: SHIP** — **HARD STOP.** Present one-line summary: "Changed X in file Y. Tests pass." Wait for user confirmation before proceeding. If on main/master → warn: "You are on main. Creating branch type/short-description. Say 'commit to main' to override." If user overrides → commit to main. Commit with conventional message, push to branch. Deploy if applicable.
 
 ---
 
@@ -135,7 +135,7 @@ GATE CAP: 3 auto-fix cycles max, then proceed to audit.
 ANNOUNCE: "N tests pass (M new, K guardrail). Linting clean."
 
 ### PHASE 4: AUDIT (2 passes)
-Why: Self-review catches what implementation missed. The loop ensures every finding is permanently fixed, not just patched.
+Why: Self-review catches what implementation missed. Phase 3 handled the original request; this phase audits the FULL diff for issues beyond that — things introduced during implementation, missed edge cases, and security concerns. The loop ensures every finding is permanently fixed, not just patched.
 
 **Pass 1 — Correctness Checklist:** Walk through each item mechanically against the diff. Do NOT rely on general "does this look right" judgment — check each item explicitly.
 - [ ] Each acceptance criterion satisfied? (check one by one)
