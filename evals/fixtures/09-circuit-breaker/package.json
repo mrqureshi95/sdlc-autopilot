@@ -1,0 +1,12 @@
+{
+  "name": "sales-reports",
+  "version": "1.3.0",
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}

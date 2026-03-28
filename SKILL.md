@@ -1,0 +1,281 @@
+---
+name: sdlc-autopilot
+description: >
+  Full software development lifecycle execution for ANY coding task.
+  Transforms rough prompts into deploy-ready, tested, audited, guarded code.
+  Triggers on: bug fixes, features, refactors, improvements, performance work,
+  security fixes, API changes, UI changes, database changes, config changes,
+  or any request to modify, create, or fix code. If the user asks you to change
+  code, this skill applies.
+---
+
+# SDLC Autopilot
+
+Transforms any rough prompt into a full SDLC execution — tailored to risk.
+The user types one messy sentence. You deliver deploy-ready, tested, audited,
+guarded code where every fix is protected against recurrence.
+
+**Principles:** (1) Tailored to risk, never one-size-fits-all. (2) Token-frugal — every token earns its keep. (3) User provides the prompt, everything else is automatic. (4) Fix it, guard it, test the guard, verify. (5) Respect project conventions and installed skills. (6) Fail safe — never auto-deploy, never commit to main, never expose secrets.
+
+**Token budget:** Quick ~1,500 tokens (SKILL.md only). Standard ~2,500 tokens (SKILL.md only). Full ~4,000 tokens (SKILL.md + deep-audit.md). Deploy add-on ~600 tokens (deployment.md, loaded once). Max 3 files loaded per invocation.
+
+---
+
+## The Fix-Guard-Test-Verify Loop
+
+This is the core innovation. It applies to EVERY issue — the original request AND anything found during audit. Without this loop, bugs get patched but recur. With it, every fix is permanent.
+
+**The 5 steps:**
+
+1. **FIX** the issue. Apply the code change.
+2. **ROOT CAUSE:** Why did this happen? Is it a pattern? Grep for the same pattern elsewhere. If found → fix up to 5 occurrences, note the rest. This is a single grep — cheap, but catches systemic issues.
+3. **GUARD:** Prevent this CLASS of issue from recurring. Choose the lightest effective guardrail using this priority (use the FIRST viable):
+   - Type/compiler enforcement (caught at build time)
+   - Linter/static analysis rule (caught before tests)
+   - Runtime assertion/invariant (caught at test/runtime)
+   - Targeted test (caught during test suite)
+   - Code comment at danger point (caught during review)
+4. **TEST THE GUARD:** Write tests that verify: the fix works, the guardrail catches recurrence, and edge cases are covered.
+5. **VERIFY:** Run the targeted tests. Pass → continue. Fail → fix and loop back to step 1. Existing tests break → circuit breaker (revert, note as deferred).
+
+**Proportionality rules — match effort to severity:**
+
+- **STRUCTURAL** (logic error, security hole, missing validation, race condition, data corruption): Full loop — Fix + Root cause + Guard + Test + Verify
+- **BEHAVIORAL** (missing error handling, incomplete edge case, wrong return value): Partial loop — Fix + Guard + Test + Verify (skip root cause scan)
+- **COSMETIC** (naming, formatting, minor DRY, style): Quick/Standard → Fix only. Full mode → Fix + code comment guard.
+- **SECURITY findings ALWAYS get the full loop regardless of severity. No exceptions.**
+
+---
+
+## Mode Selection
+
+**Signal 1 — Risk classification:**
+- LOW → Quick: text/copy, color/style, config values, comments, simple renames, docs-only
+- MEDIUM → Standard: bug fixes, new UI components, new functions, form fields, validation, behavior-preserving refactors
+- HIGH → Full: auth/authz, payments, PII/data handling, API changes, DB schema, shared libraries, security fixes, deployment config, env vars, multi-service
+
+**Signal 2 — User language:**
+- "just", "quick", "simple", "only" → bias Quick
+- "careful", "thorough", "full", "make sure" → bias Full
+- No signal → use risk classification
+- Explicit override always wins
+
+**Hard rule:** HIGH risk can NEVER be Quick mode, even if user asks. Explain why and offer Standard as the lightest option.
+
+---
+
+## Quick Mode (4 Phases)
+
+**PHASE 1: UNDERSTAND** — Read relevant file(s) (usually 1-2). Confirm what needs to change. If ambiguous → ask ONE question, then proceed.
+
+**PHASE 2: IMPLEMENT** — Make the change following existing conventions. Delegate to relevant installed skills if applicable. Run the fix-guard-test loop (lightweight): fix the issue, add a brief code comment if non-obvious. Guardrail and root cause scan are OPTIONAL in quick mode.
+
+**PHASE 3: VERIFY** — Run linter/formatter if available → auto-fix. Run existing test suite if available. If tests fail due to our change → fix. Quick check: does this affect anything else?
+
+**PHASE 4: SHIP** — Present one-line summary: "Changed X in file Y. Tests pass." Wait for user confirmation. Commit with conventional message, push to branch. Deploy if applicable.
+
+---
+
+## Standard Mode (7 Phases — The Default)
+
+### PHASE 1: UNDERSTAND & PLAN
+Why: Misunderstanding the request wastes everything downstream.
+
+1. Parse intent: bug-fix | feature | improvement | refactor | performance
+2. Scan codebase for relevant context:
+   - List file tree (2 levels, respect .gitignore)
+   - Grep for keywords from user's prompt
+   - Read ONLY directly relevant files (cap: ~10 files)
+   - Check for project rules: .cursorrules, CONTRIBUTING.md, .editorconfig
+3. Scan available skills for ANY installed skill relevant to this change
+4. Generate Implementation Brief:
+   - Problem statement (rewritten clearly)
+   - Root cause hypothesis (for bugs)
+   - Acceptance criteria (3-5 testable conditions)
+   - Files to change and regression risks
+   - Skills to delegate to (if any)
+5. Plan implementation steps (numbered, concise)
+6. Plan test strategy (what types, what edge cases)
+
+EXIT: If bug can't be found or request is genuinely ambiguous → ask ONE clarifying question. Never guess between equally likely options.
+
+ANNOUNCE: "[intent type] identified. Implementing [N] steps."
+
+### PHASE 2: IMPLEMENT
+Why: Disciplined implementation prevents scope drift and keeps changes reviewable.
+
+1. Create branch: type/short-description (if git repo)
+2. Execute plan step-by-step
+3. Delegate to relevant installed skills: scan available_skills — if ANY skill's description matches the domain, read its SKILL.md and follow it. Always scan. Never hardcode.
+4. Follow existing project conventions
+5. If new dependencies: install, note for summary
+6. If DB schema changes: create migration file
+
+RULES: SCOPE CONTROL — implement ONLY what the plan specifies. Note unrelated improvements in summary but do NOT change them. Never expose secrets. Respect project rules found in Phase 1.
+
+ANNOUNCE: "Implementation complete. Running checks."
+
+### PHASE 3: GATE & TEST
+Why: Catching issues here is 10x cheaper than catching them in production.
+
+1. Run linter → auto-fix fixable issues
+2. Run formatter → auto-fix
+3. Run type checker → fix type errors in changed files
+4. Run existing test suite: failures from our change → fix; pre-existing failures → note and ignore
+5. Apply fix-guard-test-verify loop to the ORIGINAL request:
+   a. Confirm the fix is in place
+   b. Root cause: why did this bug/gap exist? Same pattern elsewhere? (single grep) If found → fix up to 5, note rest
+   c. Guard: add the lightest effective guardrail (type > linter > assertion > test > comment)
+   d. Write targeted tests: regression test for original issue, test that guardrail works, edge cases
+   e. Verify: run new tests → must pass
+6. Update existing tests whose expectations intentionally changed (add comment explaining WHY)
+7. Run ALL tests (new + existing) to confirm
+
+IF PROJECT HAS NO TOOLING: skip linter/formatter/typechecker, still write tests in logical format, suggest framework but don't block pipeline.
+
+GATE CAP: 3 auto-fix cycles max, then proceed to audit.
+
+ANNOUNCE: "N tests pass (M new, K guardrail). Linting clean."
+
+### PHASE 4: AUDIT (2 passes)
+Why: Self-review catches what implementation missed. The loop ensures every finding is permanently fixed, not just patched.
+
+**Pass 1 — Correctness Audit:** Review ONLY the diff (changed lines + immediate context).
+- Does the change satisfy each acceptance criterion?
+- Logic errors: off-by-one, null deref, race conditions?
+- Error handling: are failure paths covered?
+- If API changed: grep for callers, verify compatibility
+- Hardcoded values that should be config/env vars?
+
+For each STRUCTURAL finding → apply the fix-guard-test-verify loop:
+  1. Fix it
+  2. Root cause: same pattern elsewhere? (grep) Fix up to 5, note rest
+  3. Guard: add guardrail for this CLASS of issue
+  4. Test: write test that catches this finding AND verifies the guardrail
+  5. Verify: run new test → must pass
+
+For each BEHAVIORAL finding → Fix + Guard + Test + Verify (skip root cause scan)
+For each COSMETIC finding → Fix only. No guardrail needed.
+
+Run tests after all pass-1 fixes.
+
+**Pass 2 — Quality & Security Audit:** Review ONLY the diff again.
+- Security: input validation, injection risk, auth checks, secrets, XSS/CSRF, dependency trust
+- Performance: N+1 queries, re-renders, memory leaks (obvious only)
+- Accessibility (UI changes): keyboard nav, ARIA labels
+- Code quality: naming, DRY, complexity (don't gold-plate)
+
+For each finding → same fix-guard-test-verify loop with same proportionality rules. Security findings ALWAYS get the full loop regardless of severity. Security guardrails are mandatory.
+
+Run tests after all pass-2 fixes.
+
+CIRCUIT BREAKER: If fixing a finding causes a NEW test failure → REVERT THE FIX. Note in summary as "identified but not fixed — requires manual review." Do not enter a fix-break spiral.
+
+CONVERGENCE SHORTCUT: If pass 1 finds zero issues → reduce pass 2 to quick security scan only.
+
+ANNOUNCE: "Audit done. N issues: fixed M, guarded K, tested J."
+
+### PHASE 5: REGRESSION & FINAL VERIFICATION
+Why: This is the last line of defense. Verify everything works together and no guardrails were accidentally removed during later fixes.
+
+1. Run FULL test suite (new + existing + guardrail tests) — the ONLY full-suite run post-implementation
+2. If regressions: expected (behavior change) → update test with explanation; unexpected → fix with guard-test-verify loop, re-run
+3. Verify wiring: imports, exports, routes, API endpoints
+4. **Guardrail completeness check** — for each issue fixed in Phases 3-4, confirm:
+   a. The fix is present and correct
+   b. The guardrail is in place (not accidentally removed during later fixes)
+   c. The guardrail test exists and passes
+   This is a COMPLETENESS CHECK, not a re-audit. Quick scan.
+5. If applicable: add error logging for new error paths
+6. Update documentation ONLY IF the change affects it: README, API docs, inline comments for non-obvious logic, CHANGELOG
+
+ANNOUNCE: "All N tests pass. M guardrails verified. Docs updated."
+
+### PHASE 6: READY GATE
+Why: The user sees exactly what happened and decides what's next.
+
+Generate change summary:
+- What was done (1-2 sentences)
+- Files changed (list with one-line descriptions)
+- Tests: N new, M updated, K guardrail tests
+- Issues found during audit: N total (fixed and guarded: M, fixed only/cosmetic: K, deferred/circuit breaker: J with descriptions)
+- Root cause patterns found elsewhere: N (with brief list)
+- Guardrails added: N (with brief descriptions)
+- Dependencies added / Migrations created (if any)
+- Pre-generated conventional commit message
+- Pre-generated branch name
+
+**HARD STOP. Wait for user:**
+- "ship it" / "push" / "deploy" / "looks good" → Phase 7
+- "change X" / "also do Y" → return to Phase 2
+- "cancel" / "revert" → discard branch
+- "create PR" → Phase 7 with PR
+
+ANNOUNCE: "Ready gate passed. Summary above."
+
+### PHASE 7: SHIP
+1. Git: stage, commit with conventional message, push branch
+2. If "create PR": create PR with change summary as description
+3. If deployment needed: read references/deployment.md for detected platform, deploy. If deploy fails → attempt rollback using platform's rollback command (see deployment.md), capture error, DO NOT retry, present to user
+4. Post-deploy: health check if platform supports it
+
+ANNOUNCE: "Pushed to [branch]. Commit: [hash]."
+
+---
+
+## Full Mode Additions
+
+Identical to Standard with these additions:
+
+**PHASE 1:** User checkpoint — present the plan, wait for explicit approval before implementing. Critical-risk changes never skip this.
+
+**PHASE 4:** Add Pass 3 — Convergence: re-review ALL changes from passes 1-2. Verify every structural fix has guardrail AND test. If structural issues remain → fix with full loop (max 3 retries). If stuck → escalate to user. Security Deep Dive: read references/deep-audit.md, OWASP Top 10 review, auth/authz flow verification, data handling (encryption, PII, logging), dependency vulnerability assessment. Every security finding gets FULL loop — no exceptions.
+
+**PHASE 5:** Guardrails mandatory for ALL findings including cosmetic. Architectural guardrails encouraged (linter rules, pre-commit hooks). Root cause scan radius expanded.
+
+---
+
+## Dynamic Skill Delegation
+
+During Phase 1, scan available_skills ONCE. For each installed skill, read its name and description. If relevant to the current change → note in Implementation Brief.
+
+During Phase 2, when you reach work matching a delegated skill's domain → read that skill's SKILL.md and follow its instructions for that portion.
+
+You don't know what skills the user has. Always scan. Never assume. If none relevant → proceed with best judgment. If multiple → use each for its domain. This skill remains the orchestrator (what work, what order). Delegated skills provide the expertise (how to do it).
+
+---
+
+## Critical Behaviors
+
+**Follow-ups:** Pipeline shipped → start NEW pipeline. During ready gate → treat as "change X," return to Phase 2. "revert"/"undo" → git revert, done. Each invocation is STATELESS.
+
+**Large codebases (10,000+ files):** List top-level tree (2 levels). Grep for keywords. Read ONLY grep results + direct imports. Cap ~10 files in Phase 1. Root cause scans use grep only — never scan entire codebase file-by-file.
+
+**Project rules conflict:** Read project rules in Phase 1. SDLC provides the PROCESS. Project rules provide the STANDARDS. If conflict: project rules win for style, SDLC wins for process.
+
+**Can't find the bug:** Report what was searched and found. Ask ONE specific question. Do NOT guess or "fix" something that might not be the issue.
+
+**Secrets:** Never include secrets in output or commits. Never add .env to git. Reference by variable name only. Exposed secrets → flag as audit finding with full loop (guard: .gitignore + pre-commit check).
+
+---
+
+## Graceful Degradation
+
+- No shell commands → write tests + list commands for user. All phases still happen.
+- No test framework → write tests in logical format. Suggest framework, don't block. Guardrail tests still written.
+- No linter/formatter/typechecker → skip automated gates. Suggest setup, don't insist.
+- No git → skip branching/commits/push. All other phases still happen.
+- Context window large → summarize earlier phases, don't load reference files unless full mode, cap file reading.
+
+---
+
+## Announcements
+
+One line max, 15 words max. Examples:
+- "Bug fix identified. Implementing 3 steps."
+- "Implementation complete. Running checks."
+- "4 tests pass (2 new, 1 guardrail). Linting clean."
+- "Audit done. 2 issues: fixed 2, guarded 2, tested 2."
+- "All 6 tests pass. 2 guardrails verified."
+- "Ready gate passed. Summary above."
+- "Pushed to fix/search-keyboard. Commit: a1b2c3d."

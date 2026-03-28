@@ -1,0 +1,19 @@
+{
+  "name": "notification-app",
+  "version": "2.1.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "@testing-library/react": "^14.1.0",
+    "@testing-library/jest-dom": "^6.1.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "test": "jest",
+    "build": "react-scripts build"
+  }
+}

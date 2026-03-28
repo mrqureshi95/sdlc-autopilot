@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculator</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 2rem auto; }
+    input { width: 80px; padding: 4px; }
+    #result { margin-top: 1rem; font-size: 1.25rem; font-weight: bold; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>Simple Calculator</h1>
+  <div>
+    <input id="a" type="number" value="10" />
+    <select id="op">
+      <option value="add">+</option>
+      <option value="subtract">-</option>
+      <option value="multiply">*</option>
+      <option value="divide">/</option>
+      <option value="percentage">%</option>
+    </select>
+    <input id="b" type="number" value="0" />
+    <button onclick="compute()">Calculate</button>
+  </div>
+  <div id="result"></div>
+
+  <script src="calculate.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

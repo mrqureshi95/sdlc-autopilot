@@ -1,0 +1,154 @@
+{
+  "skill_name": "sdlc-autopilot",
+  "evals": [
+    {
+      "id": 1,
+      "name": "quick-cosmetic-change",
+      "prompt": "change the primary button color from blue to green",
+      "fixture": "fixtures/01-cosmetic",
+      "expected_mode": "quick",
+      "assertions": [
+        "Mode is quick",
+        "No audit passes",
+        "Change summary before commit",
+        "Skill overhead under 2000 tokens"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "simple-bug-fix",
+      "prompt": "the search field gets hidden behind the keyboard on mobile",
+      "fixture": "fixtures/02-bug-fix",
+      "expected_mode": "standard",
+      "assertions": [
+        "Mode is standard",
+        "Implementation brief with acceptance criteria",
+        "Regression test written for this specific bug",
+        "Root cause scan performed (grep for similar pattern)",
+        "Guardrail added to prevent recurrence",
+        "Guardrail test written and passes",
+        "2 audit passes performed"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "new-feature",
+      "prompt": "add a dark mode toggle to the settings page",
+      "fixture": "fixtures/03-feature",
+      "expected_mode": "standard",
+      "assertions": [
+        "Implementation plan with numbered steps",
+        "Tests cover on, off, and persistence",
+        "Guardrails for edge cases (system preference, storage failure)",
+        "Existing UI tests still pass",
+        "Relevant skills consulted"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "refactor",
+      "prompt": "convert the auth service from class components to hooks",
+      "fixture": "fixtures/04-refactor",
+      "expected_mode": "standard",
+      "assertions": [
+        "Existing tests updated with comments",
+        "No behavior change",
+        "Scope drift check: only auth files changed"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "security-fix-with-guard-loop",
+      "prompt": "the login endpoint might be vulnerable to SQL injection",
+      "fixture": "fixtures/05-security",
+      "expected_mode": "full",
+      "assertions": [
+        "Mode is full",
+        "User checkpoint before implementation",
+        "SQL injection fixed with parameterized queries",
+        "Root cause scan: all other SQL queries checked for same pattern",
+        "Guardrail: parameterized query helper/wrapper added",
+        "Guardrail test: test that raw SQL concat is caught/prevented",
+        "Security deep dive performed",
+        "3 audit passes performed",
+        "Every audit finding has a corresponding guardrail",
+        "Every guardrail has a corresponding test",
+        "deep-audit.md loaded"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "audit-finding-gets-guarded",
+      "prompt": "fix the timeout error in the data fetch function",
+      "project_setup": "Function with timeout bug AND a hidden XSS vulnerability in adjacent component using dangerouslySetInnerHTML",
+      "fixture": "fixtures/06-audit-finding",
+      "expected_mode": "standard",
+      "assertions": [
+        "Original timeout bug fixed with guardrail and test",
+        "XSS vulnerability discovered during audit",
+        "XSS fix applied with full guard-test-verify loop",
+        "XSS guardrail added (input sanitization or CSP)",
+        "XSS guardrail test written and passes",
+        "Root cause scan for XSS pattern in codebase",
+        "Change summary lists both original fix and audit finding"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "no-tooling-project",
+      "prompt": "fix the divide by zero error in the calculate function",
+      "project_setup": "Plain JS files, no package.json, no tests, no linter",
+      "fixture": "fixtures/07-no-tooling",
+      "expected_mode": "standard",
+      "assertions": [
+        "Pipeline not blocked by missing tooling",
+        "Tests written despite no runner",
+        "Guardrail added (type check or validation before division)",
+        "Guardrail test written",
+        "Suggestion to set up test framework"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "user-override-quick-to-full",
+      "prompt": "change the error message text but do the full lifecycle please",
+      "fixture": "fixtures/08-override",
+      "expected_mode": "full",
+      "assertions": [
+        "User override respected",
+        "Full mode executed despite low risk",
+        "3 audit passes performed"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "circuit-breaker-test",
+      "prompt": "optimize the sorting algorithm in the data processor",
+      "project_setup": "App where the sorting function has a side effect relied on by another module. Optimizing the sort will break the dependent module.",
+      "fixture": "fixtures/09-circuit-breaker",
+      "expected_mode": "standard",
+      "assertions": [
+        "Audit finds the optimization breaks a dependent module",
+        "Circuit breaker activates: fix reverted",
+        "Issue noted as deferred in change summary",
+        "Other fixes and guardrails still in place",
+        "Pipeline does not enter infinite fix-break loop"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "root-cause-pattern-scan",
+      "prompt": "fix the null pointer crash in the user profile page",
+      "project_setup": "App with 3 other components that have the same missing null check pattern as the reported bug",
+      "fixture": "fixtures/10-null-pattern",
+      "expected_mode": "standard",
+      "assertions": [
+        "Original null check added and guarded",
+        "Root cause scan finds same pattern in 3 other locations",
+        "All 3 other locations fixed",
+        "Guardrail added for null check pattern (type narrowing or utility)",
+        "Tests cover all 4 locations"
+      ]
+    }
+  ]
+}
