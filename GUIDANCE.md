@@ -340,8 +340,7 @@ The pipeline never fully breaks — it degrades gracefully:
 | **No test framework** | Write tests in logical format. Suggest framework, don't block. Guardrail tests still written. |
 | **No linter/formatter/typechecker** | Skip automated gates. Suggest setup, don't insist. |
 | **No git** | Skip branching/commits/push. All other phases still happen. |
-| **Large context window** | Summarize earlier phases, don't load reference files unless full mode, cap file reading. |
-| **Context window too small** | If files exceed ~30% of context, summarize rather than load in full. Prioritize files from user's prompt. |
+| **Context pressure (many/large files)** | If files exceed ~30% of context, summarize rather than load in full. Prioritize files from user's prompt. Don't load reference files unless full mode. |
 
 ---
 

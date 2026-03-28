@@ -289,7 +289,7 @@ This skill is the orchestrator — it decides WHAT work to do and in WHAT order.
 - No test framework → write tests in logical format. Suggest framework, don't block. Guardrail tests still written.
 - No linter/formatter/typechecker → skip automated gates. Suggest setup, don't insist.
 - No git → skip branching/commits/push. All other phases still happen.
-- Context window large → summarize earlier phases, don't load reference files unless full mode, cap file reading.
+- Context pressure (many/large files) → if files exceed ~30% of available context, summarize rather than load in full. Prioritize files from user's prompt. Don't load reference files unless full mode.
 
 ---
 
