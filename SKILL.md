@@ -1,12 +1,7 @@
 ---
 name: sdlc-autopilot
-description: >
-  Full software development lifecycle execution for ANY coding task.
-  Transforms rough prompts into deploy-ready, tested, audited, guarded code.
-  Triggers on: bug fixes, features, refactors, improvements, performance work,
-  security fixes, API changes, UI changes, database changes, config changes,
-  or any request to modify, create, or fix code. If the user asks you to change
-  code, this skill applies.
+description: Full software development lifecycle orchestrator for ANY coding task. Triggers on ALL code changes — bug fixes, features, refactors, improvements, performance, security fixes, API changes, UI changes, database changes, config changes, new files, deletions, or any request to modify, create, fix, build, or ship code. This skill should activate FIRST on every coding prompt to orchestrate the full pipeline — understand, plan, implement, test, audit, guard against recurrence, and ship. It automatically discovers and delegates to other installed skills for domain expertise.
+license: MIT
 ---
 
 # SDLC Autopilot
@@ -237,11 +232,13 @@ Identical to Standard with these additions:
 
 ## Dynamic Skill Delegation
 
-During Phase 1, scan available_skills ONCE. For each installed skill, read its name and description. If relevant to the current change → note in Implementation Brief.
+This skill is the orchestrator — it decides WHAT work to do and in WHAT order. Other installed skills provide specialized expertise for HOW to do it.
 
-During Phase 2, when you reach work matching a delegated skill's domain → read that skill's SKILL.md and follow its instructions for that portion.
+**Phase 1 — Discovery:** At startup the agent loads the name and description of ALL installed skills into context. Review this list ONCE. For each skill whose description matches the domain of the current change (e.g. a React skill for React work, a testing skill for test writing, a design skill for UI changes) → note it in the Implementation Brief as a skill to delegate to.
 
-You don't know what skills the user has. Always scan. Never assume. If none relevant → proceed with best judgment. If multiple → use each for its domain. This skill remains the orchestrator (what work, what order). Delegated skills provide the expertise (how to do it).
+**Phase 2 — Delegation:** When you reach work matching a noted skill's domain → read that skill's SKILL.md and follow its instructions for that portion of the implementation. For example, if the user has a `frontend-design` skill installed and the task involves UI, load and follow that skill's guidance for the CSS/design work.
+
+**Rules:** Always check the installed skills list — never assume what the user has. If none are relevant → proceed with your own best judgment. If multiple are relevant → use each for its respective domain. This skill remains in control of the overall pipeline (phases, testing, auditing). Delegated skills handle domain-specific best practices.
 
 ---
 

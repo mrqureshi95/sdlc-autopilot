@@ -52,19 +52,29 @@ ISSUE FOUND
 
 ## Installation
 
-### Claude Code
+### All Agents (Recommended)
 ```bash
-claude skill install sdlc-autopilot
+npx skills add mrqureshi95/sdlc-autopilot
 ```
 
-### GitHub Copilot
-Copy the `SKILL.md` file to `.github/copilot-instructions.md` in your repository.
+This works with Claude Code, Cursor, GitHub Copilot, Windsurf, Codex, Cline, Roo, OpenCode, Amp, and 30+ other agents. The CLI auto-detects your installed agents.
 
-### Cursor
-Copy the `SKILL.md` content to `.cursorrules` in your repository root.
+### Install globally (available across all projects)
+```bash
+npx skills add mrqureshi95/sdlc-autopilot -g
+```
 
-### Windsurf
-Copy the `SKILL.md` content to `.windsurfrules` in your repository root.
+### Install to specific agents
+```bash
+npx skills add mrqureshi95/sdlc-autopilot -a claude-code -a cursor -a github-copilot
+```
+
+### Manual Installation
+If you prefer not to use the CLI, copy the `SKILL.md` file to your agent's skills directory:
+- **Claude Code:** `.claude/skills/sdlc-autopilot/SKILL.md`
+- **GitHub Copilot:** `.agents/skills/sdlc-autopilot/SKILL.md`
+- **Cursor:** `.agents/skills/sdlc-autopilot/SKILL.md`
+- **Windsurf:** `.windsurf/skills/sdlc-autopilot/SKILL.md`
 
 ---
 
