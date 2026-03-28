@@ -16,14 +16,14 @@ flowchart LR
     B --> C["Agent loads name + description<br/>of ALL installed skills"]
     C --> D["User sends a coding prompt"]
     D --> E{"Does any skill's<br/>description match?"}
-    E -->|"YES — sdlc-autopilot's description<br/>matches virtually ALL coding tasks"| F["Agent reads SKILL.md<br/>(278 lines of instructions)"]
+    E -->|"YES — sdlc-autopilot's description<br/>matches virtually ALL coding tasks"| F["Agent reads SKILL.md<br/>(~305 lines of instructions)"]
     E -->|NO| G["Agent uses default behavior"]
     F --> H["Pipeline begins"]
 ```
 
 The key is the **description** field in the YAML frontmatter. It's written to match every possible coding task: *"bug fixes, features, refactors, improvements, performance, security fixes, API changes, UI changes, database changes..."* — so any coding prompt triggers it.
 
-The agent only loads the full SKILL.md when triggered. This is called **progressive disclosure** — name+description are always in context (~574 chars), but the full 278-line instruction set is loaded on-demand.
+The agent only loads the full SKILL.md when triggered. This is called **progressive disclosure** — name+description are always in context (~574 chars), but the full ~305-line instruction set is loaded on-demand.
 
 ---
 
@@ -348,7 +348,7 @@ The pipeline never fully breaks — it degrades gracefully:
 
 ```
 sdlc-autopilot/
-├── SKILL.md                      ← Main pipeline (278 lines, loaded on activation)
+├── SKILL.md                      ← Main pipeline (~305 lines, loaded on activation)
 ├── GUIDANCE.md                   ← This document
 ├── references/
 │   ├── deep-audit.md             ← OWASP + guardrail patterns (Full mode only)

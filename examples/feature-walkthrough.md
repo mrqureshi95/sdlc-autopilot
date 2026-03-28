@@ -62,7 +62,7 @@
   - Test: Test that theme class exists on `<html>` before React mounts
   - Verify: passes ✓
 
-**Pass 2 — Quality & Security:**
+**Pass 2 — Security & Quality Checklist:**
 - Accessibility: toggle is keyboard accessible with proper ARIA ✓
 - Performance: no re-renders on theme change (CSS variables only) ✓
 - Security: localStorage data is a string enum, no injection risk ✓

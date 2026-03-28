@@ -48,8 +48,9 @@
 - No logic errors, no race conditions
 - 0 findings
 
-**Pass 2 — Quick security scan (convergence shortcut — pass 1 was clean):**
+**Pass 2 — Security & Quality Checklist:**
 - No security issues in CSS changes
+- No injection risks, no auth changes
 - 0 findings
 
 **Announce:** "Audit done. 0 issues."

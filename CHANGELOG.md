@@ -1,5 +1,27 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- Token budgets clarified as "skill instruction overhead only" — excludes user code reading and tool calls
+- Branch behavior: warn before committing to main/master instead of forcing branch creation; user can say "commit to main" to override
+- Phase 4 audit reframed as explicit checklists (correctness + security) instead of open-ended review
+- Convergence shortcut: pass 1 no longer gates pass 2 thoroughness — correctness and security are independent concerns
+- Phase 3/4 scope clarified: Phase 4 audits the full diff for issues beyond the original request
+- "Max 3 skill files" clarified as max 3 reference files; delegated skill files don't count
+- Guard step clarified for features (edge case coverage, not recurrence prevention) and checks for existing guardrails before adding duplicates
+- Graceful degradation entry renamed from "Large context window" to "Context pressure" with 30% threshold
+
+### Added
+- Mid-pipeline abort: `git checkout -- .` to discard changes, offer branch deletion on "stop"/"undo"/"cancel"
+- Monorepo awareness: auto-detect and scope tests/scans to affected packages
+- PR description template: structured ## What/Why/Testing/Guardrails/Breaking Changes
+- CHANGELOG automation: auto-generate entry from commit message
+- Context window awareness: summarize rather than load in full when files exceed ~30% of available context
+- Delegation fallback: skip delegation if installed skills list not available in context
+- Agent Compatibility section in README (agentic vs chat-only)
+- Quick mode Phase 4 (Ship) now has explicit HARD STOP
+
 ## [1.0.0] - 2026-03-26
 
 ### Added
