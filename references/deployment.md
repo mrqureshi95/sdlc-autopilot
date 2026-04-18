@@ -14,6 +14,9 @@ Check in order. First match wins:
 7. `.git/` with remote → Generic Git (push only)
 No match → skip deploy, note in summary.
 
+**Detection confirmation — REQUIRED before running any deploy command:**
+Present to the user: "Detected deploy target: **[platform]** (matched on `[file]`). Environment: **[preview/staging/prod]**. Command: `[exact command]`. Proceed?" Wait for explicit approval. If the detection file could be for local development only (especially Dockerfile, docker-compose.yml without a registry push), flag this: "Note: `[file]` may be for local dev — confirm this is your deploy target."
+
 ## Custom Deploy Script
 
 **Detect:** `scripts.deploy` in package.json, `deploy:` in Makefile, or `deploy.sh` exists
@@ -134,6 +137,20 @@ gh pr create --title "<conventional-commit-style title>" --body "<change summary
 If `gh` not available → provide PR title and body for manual creation.
 If PR already exists for branch → `gh pr view` to check, then update with `gh pr edit`.
 
+**PR description template:**
+```
+## What
+[1-2 sentence summary from Phase 6]
+## Why
+[Root cause / motivation]
+## Testing
+[N new tests, M guardrail tests, what they cover]
+## Guardrails Added
+[List of guardrails preventing recurrence]
+## Breaking Changes
+[None / list]
+```
+
 ## Conventional Commits
 
 Format: `type(scope): description`
@@ -143,8 +160,9 @@ Multi-line body: use `git commit` with heredoc for detailed description.
 
 ## General Deploy Rules
 
-1. **Never deploy to production without explicit user approval.** Preview/staging deploys are acceptable.
-2. **If deploy fails → attempt rollback** using the platform's rollback command above. If rollback also fails → capture both errors, present to user, do NOT retry.
-3. **Always capture the deploy URL/ID** from output for the change summary.
-4. **Environment variables:** Never include secret values in commands. Reference by name only (`$VAR_NAME`). If a required var is missing, tell the user which var to set.
-5. **Post-deploy health check:** Run the platform's health check. If unhealthy → suggest rollback but do NOT auto-rollback without user approval.
+1. **NEVER auto-deploy — always confirm.** Show detected platform, environment, and exact command. Wait for user approval. This applies to ALL environments including preview/staging.
+2. **Default to preview/staging.** Only deploy to production if the user explicitly says "prod" or "production." Never infer production intent.
+3. **If deploy fails → attempt rollback** using the platform's rollback command above. If rollback also fails → capture both errors, present to user, do NOT retry.
+4. **Always capture the deploy URL/ID** from output for the change summary.
+5. **Environment variables:** Never include secret values in commands. Reference by name only (`$VAR_NAME`). If a required var is missing, tell the user which var to set.
+6. **Post-deploy health check:** Run the platform's health check. If unhealthy → suggest rollback but do NOT auto-rollback without user approval.

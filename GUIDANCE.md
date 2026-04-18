@@ -1,440 +1,259 @@
-# SDLC Autopilot — Guidance Document
+# SDLC Autopilot — Guidance
 
-## What Is It?
+## What It Is
 
-sdlc-autopilot is an **Agent Skill** — a set of instructions that AI coding agents (GitHub Copilot, Cursor, Claude Code, Windsurf, etc.) load to change how they handle coding tasks. Instead of the agent just making a code change and stopping, this skill forces it through a full software development lifecycle: understand → plan → implement → test → audit → guard → ship.
+SDLC Autopilot is an agent skill that forces useful engineering discipline without turning every change into ceremony. The live skill is now built around a leaner model:
 
-The user types one messy sentence like *"the search page crashes when you press enter"* — and the agent delivers a tested, audited, guarded fix with a conventional commit, ready to deploy.
+- Quick mode for truly trivial edits.
+- Standard mode as a 5-phase workflow.
+- Full mode for high-risk work.
+- Expert mode as an overlay that removes presentation overhead without weakening safeguards.
+# SDLC Autopilot — Guidance
 
----
+## What It Is
 
-## How It Gets Activated
+SDLC Autopilot is an agent skill that forces useful engineering discipline without turning every change into ceremony. The live skill is now built around a leaner model:
 
-```mermaid
-flowchart LR
-    A["User installs skill<br/><code>npx skills add mrqureshi95/sdlc-autopilot</code>"] --> B["Agent starts up"]
-    B --> C["Agent loads name + description<br/>of ALL installed skills"]
-    C --> D["User sends a coding prompt"]
-    D --> E{"Does any skill's<br/>description match?"}
-    E -->|"YES — sdlc-autopilot's description<br/>matches virtually ALL coding tasks"| F["Agent reads SKILL.md<br/>(~318 lines of instructions)"]
-    E -->|NO| G["Agent uses default behavior"]
-    F --> H["Pipeline begins"]
-```
+- Quick mode for truly trivial edits.
+- Standard mode as a 5-phase workflow.
+- Full mode for high-risk work.
+- Expert mode as an overlay that removes presentation overhead without weakening safeguards.
 
-The key is the **description** field in the YAML frontmatter. It's written to match every possible coding task: *"bug fixes, features, refactors, improvements, performance, security fixes, API changes, UI changes, database changes..."* — so any coding prompt triggers it.
-
-The agent only loads the full SKILL.md when triggered. This is called **progressive disclosure** — name+description are always in context (~350 chars), but the full ~318-line instruction set (~4,900 tokens) is loaded on-demand.
+The point is not to make the agent narrate process. The point is to make the agent produce better code: tests that matter, guardrails that reduce recurrence, honest limitations, and a ready gate that surfaces real evidence.
 
 ---
 
-## The Core Innovation: Fix-Guard-Test-Verify Loop
+## Activation Model
 
-This is what separates this skill from a basic "make the change" workflow. Every issue — the original request AND anything found during audit — goes through this loop:
+The skill is triggered by its description, which is intentionally broad enough to match normal coding requests: bug fixes, features, refactors, security work, API changes, deployment changes, and audits.
 
-```mermaid
-flowchart TD
-    A["🔧 FIX<br/>Apply the code change"] --> B["🔍 ROOT CAUSE<br/>Why did this happen?<br/>Grep for same pattern elsewhere<br/>Fix up to 5 occurrences"]
-    B --> C["🛡️ GUARD<br/>Prevent this CLASS of issue<br/>from recurring"]
-    C --> D["🧪 TEST THE GUARD<br/>Write tests that verify:<br/>• Fix works<br/>• Guard catches recurrence<br/>• Edge cases covered"]
-    D --> E["✅ VERIFY<br/>Run tests"]
-    E -->|PASS| F["Continue"]
-    E -->|FAIL| A
-    E -->|"Breaks existing tests<br/>(CIRCUIT BREAKER)"| G["⚡ REVERT<br/>Note as deferred"]
-```
+Once triggered, the agent should load only what it needs:
 
-### Guardrail Priority
+- [SKILL.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/SKILL.md) for the main workflow.
+- [references/self-verification.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/self-verification.md) only at the Ready Gate.
+- [references/deep-audit.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/deep-audit.md) only in Full mode.
+- [references/deployment.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/deployment.md) only for deploy work.
 
-Use the FIRST viable option (lightest effective):
-
-1. **Type/compiler enforcement** — caught at build time
-2. **Linter/static analysis rule** — caught before tests
-3. **Runtime assertion/invariant** — caught at test/runtime
-4. **Targeted test** — caught during test suite
-5. **Code comment at danger point** — caught during review
-
-### Proportionality — Effort Scales With Severity
-
-```mermaid
-flowchart LR
-    S["STRUCTURAL<br/><i>logic error, security hole,<br/>race condition</i>"] -->|"Full loop"| FL["Fix + Root Cause +<br/>Guard + Test + Verify"]
-    B["BEHAVIORAL<br/><i>missing error handling,<br/>wrong return value</i>"] -->|"Partial loop"| PL["Fix + Guard +<br/>Test + Verify"]
-    C["COSMETIC<br/><i>naming, formatting,<br/>minor DRY</i>"] -->|"Quick only"| QF["Fix only<br/><i>(+ comment in Full mode)</i>"]
-```
-
-**Security findings ALWAYS get the full loop — no exceptions.**
+This keeps the workflow useful for large codebases and vibe-coding sessions where instruction bloat can crowd out the actual repo context.
 
 ---
 
-## Mode Selection
+## Core Loop
 
-The skill picks one of 3 modes based on risk + user language:
+The real differentiator is Fix-Guard-Test-Verify.
 
-```mermaid
-flowchart TD
-    P["User Prompt"] --> R{"Risk Classification"}
-    R -->|"LOW<br/>text, color, config,<br/>comments, docs"| Q["⚡ Quick Mode<br/>4 phases"]
-    R -->|"MEDIUM<br/>bug fixes, new components,<br/>validation, refactors"| S["🔧 Standard Mode<br/>7 phases (default)"]
-    R -->|"HIGH<br/>auth, payments, PII,<br/>API, DB schema, security"| F["🔒 Full Mode<br/>7 phases + extras"]
+1. Fix the issue.
+2. Scan for the same root-cause pattern elsewhere and verify each match in context before changing it.
+3. Add the lightest effective guardrail.
+4. Write tests that prove the fix and the guardrail matter.
+5. Verify the result.
 
-    P --> L{"User Language"}
-    L -->|"'just', 'quick', 'simple'"| QB["Bias toward Quick"]
-    L -->|"‘careful’, ‘thorough’, ‘full’,<br/>‘full pipeline’, ‘full audit’, ‘full sdlc’"| FB["Force Full mode"]
-    L -->|"No signal"| RB["Use risk classification"]
+Key properties of the current design:
 
-    F -.->|"⚠️ HARD RULE"| HR["HIGH risk can NEVER<br/>be Quick mode, even<br/>if user asks"]
-    FB -.->|"✅ ALWAYS ALLOWED"| HR2["User can FORCE Full mode<br/>on ANY risk level"]
-```
+- Root-cause scans are verify-before-fix, not blind grep-and-rewrite.
+- Each finding has a hard retry cap of 3 loops.
+- Structural and security findings always get the full loop.
+- Behavioral work gets the loop unless the agent can explicitly justify that the issue is local-only.
+- Cosmetic work stays proportional.
 
-### Risk Classification Table
-
-| Risk Level | Examples | Mode |
-|---|---|---|
-| **LOW** | Text/copy, color/style, config values, comments, simple renames, docs-only | Quick |
-| **MEDIUM** | Bug fixes, new UI components, new functions, form fields, validation, behavior-preserving refactors | Standard |
-| **HIGH** | Auth/authz, payments, PII/data handling, API changes, DB schema, shared libraries, security fixes, deployment config, env vars, multi-service | Full |
+This is the part of the skill that should stay opinionated. It is the actual quality lever.
 
 ---
 
-## The Full Pipeline (Standard Mode — 7 Phases)
+## Test Quality Standards
 
-```mermaid
-flowchart TD
-    subgraph P1["PHASE 1: UNDERSTAND & PLAN"]
-        P1a["Parse intent: bug/feature/refactor/perf"] --> P1b["Scan codebase: file tree, grep, read ~10 files"]
-        P1b --> P1c["Check for project rules<br/>.cursorrules, CONTRIBUTING.md, .editorconfig"]
-        P1c --> P1d["Scan installed skills for delegation"]
-        P1d --> P1e["Generate Implementation Brief:<br/>• Problem statement<br/>• Root cause hypothesis<br/>• Acceptance criteria (3-5)<br/>• Files to change<br/>• Skills to delegate to"]
-        P1e --> P1f["Plan steps + test strategy"]
-    end
+The skill now treats test quality as a first-class concern rather than a byproduct.
 
-    subgraph P2["PHASE 2: IMPLEMENT"]
-        P2a["Git branch check: on main/master?<br/>→ Warn user, offer override<br/>Otherwise → stay on current branch"] --> P2b["Execute plan step-by-step"]
-        P2b --> P2c["Delegate to installed skills<br/>for domain-specific work"]
-        P2c --> P2d["Follow project conventions"]
-    end
+Every meaningful regression or guardrail test should satisfy:
 
-    subgraph P3["PHASE 3: GATE & TEST"]
-        P3a["Run linter → auto-fix"] --> P3b["Run formatter → auto-fix"]
-        P3b --> P3c["Run type checker → fix errors"]
-        P3c --> P3d["Run existing test suite"]
-        P3d --> P3e["Apply Fix-Guard-Test-Verify loop<br/>to original request"]
-        P3e --> P3f["Write new tests:<br/>regression + guardrail + edge cases"]
-        P3f --> P3g["Run ALL tests"]
-    end
+1. Inversion: it would fail on the pre-fix code.
+2. Behavior over implementation: it asserts outputs, side effects, or errors.
+3. Negative coverage: it exercises bad, malformed, or boundary input when relevant.
+4. Minimal mocking: only external I/O gets mocked.
 
-    subgraph P4["PHASE 4: AUDIT (2 passes)"]
-        P4a["Pass 1: Correctness CHECKLIST<br/>• Each acceptance criterion met?<br/>• Off-by-one errors?<br/>• Null/undefined access?<br/>• Race conditions?<br/>• Error handling on failure paths?"] --> P4b["Each finding →<br/>Fix-Guard-Test-Verify loop"]
-        P4b --> P4c["Run tests after pass 1"]
-        P4c --> P4d["Pass 2: Security & Quality CHECKLIST<br/>• Input validation?<br/>• Injection risks (SQL, XSS)?<br/>• Auth on new endpoints?<br/>• Secrets exposed?"]
-        P4d --> P4e["Each finding →<br/>Fix-Guard-Test-Verify loop"]
-        P4e --> P4f["Run tests after pass 2"]
-    end
-
-    subgraph P5["PHASE 5: REGRESSION & FINAL"]
-        P5a["Run FULL test suite"] --> P5b["Fix regressions with guard loop"]
-        P5b --> P5c["Verify wiring: imports, routes, APIs"]
-        P5c --> P5d["Guardrail completeness check:<br/>Every fix has guard + test?"]
-        P5d --> P5e["Update docs if affected"]
-    end
-
-    subgraph P6["PHASE 6: READY GATE"]
-        P6a["Generate change summary:<br/>• What changed<br/>• Files list<br/>• Test counts<br/>• Audit findings<br/>• Guardrails added<br/>• Commit message"]
-        P6a --> P6b["⛔ HARD STOP<br/>Wait for user"]
-    end
-
-    subgraph P7["PHASE 7: SHIP"]
-        P7a["Git: commit + push branch"] --> P7b{"Create PR?"}
-        P7b -->|YES| P7c["gh pr create with<br/>structured PR template"]
-        P7b -->|NO| P7c2["Update CHANGELOG<br/>if project has one"]
-        P7c -->  P7c2
-        P7c2 --> P7d{"Deploy?"}
-        P7d -->|YES| P7e["Auto-detect platform<br/>→ deploy"]
-        P7e --> P7f["Health check"]
-    end
-
-    P1 --> P2 --> P3 --> P4 --> P5 --> P6
-    P6b -->|"'ship it' / 'push'"| P7
-    P6b -->|"'change X'"| P2
-    P6b -->|"'cancel'"| DISCARD["Discard branch"]
-```
+That is important for vibe coders because green tests are otherwise easy to fake. A shallow test suite creates false confidence faster than no tests at all.
 
 ---
 
-## Quick Mode vs Standard vs Full
+## Engineering Standards
 
-```mermaid
-flowchart LR
-    subgraph Quick["⚡ Quick (4 phases)"]
-        QP1["Understand"] --> QP2["Implement<br/><i>lightweight guard loop</i>"]
-        QP2 --> QP3["Verify<br/><i>lint + existing tests</i>"]
-        QP3 --> QP4["Ship"]
-    end
+These are deliberately preserved in the live skill and remain non-negotiable for Standard and Full mode:
 
-    subgraph Standard["🔧 Standard (7 phases)"]
-        SP1["Understand & Plan"] --> SP2["Implement"]
-        SP2 --> SP3["Gate & Test<br/><i>full guard loop</i>"]
-        SP3 --> SP4["Audit<br/><i>2 passes</i>"]
-        SP4 --> SP5["Regression & Final"]
-        SP5 --> SP6["Ready Gate ⛔"]
-        SP6 --> SP7["Ship"]
-    end
+- TDD bias.
+- Single source of truth.
+- DRY with judgment.
+- Edge-case closure.
+- Contract safety.
+- Smallest safe change.
 
-    subgraph Full["🔒 Full (Standard + extras)"]
-        FE1["User checkpoint<br/>before implementing"]
-        FE2["Pass 3: Convergence<br/><i>re-review ALL changes</i>"]
-        FE3["OWASP Top 10<br/>deep security dive"]
-        FE4["Guardrails mandatory<br/>for ALL findings<br/><i>including cosmetic</i>"]
-    end
-```
-
-### Full Mode Additions
-
-| Addition | Description |
-|---|---|
-| **User checkpoint** | Phase 1 presents the plan and waits for explicit approval before implementing |
-| **Pass 3: Convergence** | Re-reviews ALL changes from passes 1-2; loads `references/deep-audit.md` for OWASP Top 10 checklist |
-| **Security Deep Dive** | Full OWASP Top 10 review, auth flow verification, data handling audit |
-| **Mandatory guardrails** | ALL findings get guardrails, including cosmetic ones |
-| **Expanded root cause scan** | Wider search radius for pattern occurrences |
+The edge-case closure rule is especially important. The agent should leave each relevant edge case in one of four states only: tested, guarded, impossible by construction, or explicitly deferred as unresolved risk. Structural and security deferrals block shipping.
 
 ---
 
-## Toolchain Auto-Detection
+## Modes
 
-Before running gates, the skill uses `scripts/detect-toolchain.sh` to auto-detect the project's stack:
+### Quick
 
-```mermaid
-flowchart TD
-    DT["detect-toolchain.sh"] --> L{"Language?"}
-    L -->|"package.json"| JS["JavaScript/TypeScript"]
-    L -->|"requirements.txt / pyproject.toml"| PY["Python"]
-    L -->|"go.mod"| GO["Go"]
-    L -->|"Cargo.toml"| RS["Rust"]
-    L -->|"Gemfile"| RB["Ruby"]
-    L -->|"pom.xml / build.gradle"| JV["Java"]
+Quick mode is for one-file, non-behavioral edits. It reads the file, makes the change, runs available checks, and stops at user confirmation. The moment the work requires behavior changes, tests, or guardrails, it must promote.
 
-    DT --> FW["Framework Detection<br/>React, Next, Vue, Svelte, Express,<br/>Django, Flask, FastAPI, Rails, Spring"]
-    DT --> TL["Tool Detection"]
-    TL --> LN["Linter: ESLint, Ruff, flake8, golangci-lint, Rubocop"]
-    TL --> FM["Formatter: Prettier, Black, gofmt, rustfmt"]
-    TL --> TC["Type Checker: tsc, mypy, pyright"]
-    TL --> TR["Test Runner: Jest, Vitest, pytest, go test, cargo test"]
-    DT --> DP["Deploy Target Detection"]
-    DP -->|"supabase/config.toml"| SUP["Supabase"]
-    DP -->|"vercel.json"| VER["Vercel"]
-    DP -->|"netlify.toml"| NET["Netlify"]
-    DP -->|"Dockerfile"| DOC["Docker"]
-    DP -->|"serverless.yml"| AWS["AWS"]
-    DP -->|".git + remote"| GIT["Generic Git"]
+### Standard
 
-    DT --> OUT["JSON Output:<br/>{language, framework, linter,<br/>formatter, type_checker, test_runner,<br/>deploy_target, git_status, git_branch}"]
-```
+Standard mode is now 5 phases:
 
-The gate runner (`scripts/run-gates.sh`) then uses this info to run the right tools with auto-fix.
+1. Understand
+2. Implement
+3. Verify
+4. Ready Gate
+5. Ship
 
-### Supported Detection Matrix
+The crucial change is that verification is unified. The agent no longer needs separate ritual phases for “gate and test”, “audit”, and “regression”. Those are now one coherent verify phase.
 
-| Category | Detected Tools |
-|---|---|
-| **Languages** | JavaScript, TypeScript, Python, Go, Rust, Ruby, Java |
-| **Frameworks** | Next.js, React, Vue, Svelte, Express, Fastify, Django, Flask, FastAPI, Rails, Spring |
-| **Linters** | ESLint, Ruff, flake8, golangci-lint, Rubocop |
-| **Formatters** | Prettier, Black, gofmt, rustfmt |
-| **Type Checkers** | tsc, mypy, pyright |
-| **Test Runners** | Jest, Vitest, pytest, go test, cargo test, npm test |
-| **Deploy Targets** | Supabase, Vercel, Netlify, AWS (Serverless/SAM), Docker, Generic Git |
+### Full
+
+Full mode keeps Standard mode but adds:
+
+- User approval before implementation.
+- Deeper security review via [references/deep-audit.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/deep-audit.md).
+- A convergence pass on structural and security changes.
+- Stronger executable guardrail expectations.
+
+### Expert Mode
+
+Expert mode does not weaken the workflow. It simply removes optional ceremony when the user or repo guidance explicitly asks for it. The agent still owes TDD bias, guardrails, edge-case closure, verification, and honest disclosure.
 
 ---
 
-## Dynamic Skill Delegation
+## AI Review Limits
 
-sdlc-autopilot is an **orchestrator** — it controls the pipeline, but delegates domain expertise to other installed skills:
+The skill is intentionally explicit about what AI review can and cannot do.
 
-```mermaid
-flowchart TD
-    U["User: 'Fix the login page styling'"] --> SA["sdlc-autopilot activates<br/>(matches 'fix' + 'styling')"]
-    SA --> P1["Phase 1: Scan installed skills"]
-    P1 --> CHECK{"Any skill descriptions<br/>match this task domain?"}
-    CHECK -->|"frontend-design skill matches<br/>'styling', 'UI changes'"| NOTE["Note in Implementation Brief:<br/>Delegate CSS/design to frontend-design"]
-    CHECK -->|"react-doctor skill matches<br/>'React component'"| NOTE2["Note: Delegate React patterns<br/>to react-doctor"]
-    CHECK -->|"No matches"| OWN["Use own best judgment"]
+AI review is good at:
 
-    NOTE --> P2["Phase 2: Implementation"]
-    NOTE2 --> P2
-    P2 --> DEL["When doing CSS work →<br/>Load frontend-design SKILL.md<br/>Follow its guidance"]
-    P2 --> DEL2["When doing React work →<br/>Load react-doctor SKILL.md<br/>Follow its guidance"]
+- Known vulnerability patterns.
+- Null/undefined and off-by-one mistakes.
+- Obvious validation gaps.
+- Familiar unsafe APIs.
 
-    SA -.->|"sdlc-autopilot controls"| PIPE["Pipeline phases,<br/>testing, auditing,<br/>guardrails, shipping"]
-    DEL -.->|"Delegated skills control"| DOM["Domain-specific<br/>best practices"]
-    DEL2 -.->|"Delegated skills control"| DOM
-```
+AI review is not proof of:
 
-### Delegation Rules
+- Full correctness.
+- Absence of vulnerabilities.
+- Novel exploit resistance.
+- Subtle business-logic soundness.
+- System-wide safety.
 
-- **Always** check the installed skills list — never assume what the user has
-- If **none** are relevant → proceed with the agent's own best judgment
-- If **multiple** are relevant → use each for its respective domain
-- sdlc-autopilot remains in control of the **overall pipeline** (phases, testing, auditing)
-- Delegated skills handle **domain-specific best practices** only
-- **Fallback:** If the installed skills list is not available in context (some agents don't expose it) → skip delegation entirely and proceed with own judgment. Do not error or stall.
+That is why the live skill now insists on limitation disclosure in the final summary and a human-review recommendation for high-risk domains.
 
 ---
 
-## Circuit Breaker & Safety Mechanisms
+## Verification Model
 
-```mermaid
-flowchart TD
-    FIX["Fix an audit finding"] --> TEST["Run tests"]
-    TEST -->|PASS| CONTINUE["Continue"]
-    TEST -->|"NEW test failure<br/>(not from original change)"| CB["⚡ CIRCUIT BREAKER"]
-    CB --> REV["REVERT the fix"]
-    REV --> NOTE["Note in summary:<br/>'Identified but not fixed —<br/>requires manual review'"]
-    NOTE --> NEXT["Move to next finding"]
+The current repo uses two verification layers.
 
-    GC["Gate Cap: 3 auto-fix<br/>cycles max"] --> PROCEED["Proceed to audit<br/>even with remaining issues"]
+### Layer 1: External Script
 
-    DEPLOY["Deploy fails"] --> ROLLBACK["Attempt platform rollback"]
-    ROLLBACK -->|"Rollback succeeds"| REPORT["Report to user"]
-    ROLLBACK -->|"Rollback also fails"| ERRORS["Capture both errors<br/>Present to user<br/>DO NOT retry"]
-```
+[scripts/verify-pipeline.sh](/Users/muhammadqureshi/Projects/sdlc-autopilot/scripts/verify-pipeline.sh) checks repo evidence, not agent narration.
 
-### Safety Hard Rules
+For Standard and Full mode it looks for:
 
-| Rule | Description |
-|---|---|
-| **Never auto-deploy to production** | Preview/staging deploys are acceptable; production requires explicit user approval |
-| **Warn before committing to main/master** | If on main/master, warn and offer to create a branch; user can say "commit to main" to override |
-| **Never expose secrets** | Reference by variable name only (`$VAR_NAME`), never include values |
-| **Circuit breaker on fix spirals** | If fixing a finding causes a NEW test failure → revert immediately |
-| **Gate cap** | Maximum 3 auto-fix cycles, then proceed |
-| **Hard stop at Ready Gate** | Phase 6 always waits for user confirmation |
-| **No retry on deploy failure** | Attempt rollback once, then present errors to user |
+- A real diff.
+- Test-file updates when source changes exist.
+- Passing tests.
+- Coverage evidence when the project exposes coverage artifacts.
+- Executable guardrail signals.
+- Meaningful assertion counts in changed tests.
+- No newly introduced secrets, dangerous patterns, or suppression markers.
+
+In Full mode it also looks for security-specific guardrail signals.
+
+### Layer 2: Critical Outcomes
+
+[references/self-verification.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/self-verification.md) is now intentionally short. It focuses on 10 critical outcomes rather than a long ledger. That makes it more likely the agent will use it honestly instead of rubber-stamping a giant checklist.
+
+### Contradictions
+
+If the script and self-check disagree, the script wins. The agent must state the contradiction, diagnose it, try to fix it, and rerun verification. Silent disagreement is not allowed.
 
 ---
 
-## Token Budget Strategy
+## Cross-Model Review
 
-```mermaid
-flowchart TD
-    Q["Quick Mode<br/>SKILL.md only (~4,900 tokens)"] -->|"Loads"| S1["SKILL.md only"]
-    ST["Standard Mode<br/>~7,300 tokens"] -->|"Loads"| S1
-    ST -->|"Ready Gate"| SV["references/self-verification.md<br/>(~2,400 tokens)"]
-    F["Full Mode<br/>~9,400 tokens"] -->|"Loads"| S1
-    F -->|"Also loads"| DA["references/deep-audit.md<br/>(~2,100 tokens)"]
-    F -->|"Ready Gate"| SV
+Cross-model review is now structural, not mandatory theater.
 
-    SHIP["Phase 7: Ship<br/>+~2,100 tokens"] -->|"Loads once"| DEP["references/deployment.md<br/>(150 lines)"]
+- If the current toolchain can invoke another model, the agent should use it.
+- If it cannot, the agent should generate a copyable adversarial review prompt.
+- In Standard mode it is recommended.
+- In Full or high-risk work it is strongly recommended.
 
-    RULE["Max 3 reference files<br/>loaded beyond SKILL.md"]
-```
+This makes the feature useful without pretending every environment supports automated multi-model orchestration.
 
-SKILL.md (~4,900 tokens of content) is loaded on activation. Reference files are loaded **only when needed** — `deep-audit.md` (~2,100 tokens) only in Full mode Phase 4, `deployment.md` (~2,100 tokens) only in Phase 7, `self-verification.md` (~2,400 tokens) at the Ready Gate (Phase 6 for Standard/Full only; Quick mode verifies inline without loading it). Per-mode budgets represent the instructions the agent follows, not total read cost — total pipeline cost depends on codebase size and files read.
+---
+
+## Agent Cooperation
+
+The skill should cooperate with the agent’s native strengths.
+
+- If the agent already manages branches, tests, or commits well, use those mechanics.
+- SDLC Autopilot adds process discipline, not duplicated plumbing.
+- The live skill now explicitly treats phases as outcomes, not rituals.
+
+That matters for vibe coders because the workflow should feel like a safety rail, not a second product layered on top of the editor.
+
+---
+
+## Deployment Safety
+
+Deployment remains gated.
+
+- Never auto-deploy.
+- Always show detected target, environment, and exact command.
+- Default to preview or staging.
+- Require an explicit `prod` or `production` instruction for production deploys.
+
+This is unchanged in spirit, but it now aligns cleanly with the leaner 5-phase model.
 
 ---
 
 ## Graceful Degradation
 
-The pipeline never fully breaks — it degrades gracefully:
+The workflow should still function when tools are missing.
 
-| Missing | Behavior |
-|---|---|
-| **No shell commands** | Write tests + list commands for user. All phases still happen. |
-| **No test framework** | Write tests in logical format. Suggest framework, don't block. Guardrail tests still written. |
-| **No linter/formatter/typechecker** | Skip automated gates. Suggest setup, don't insist. |
-| **No git** | Skip branching/commits/push. All other phases still happen. |
-| **Context pressure (many/large files)** | If files exceed ~30% of context, summarize rather than load in full. Prioritize files from user's prompt. Don't load reference files unless full mode. |
+- No shell: write the commands the user should run.
+- No test runner: write logical tests anyway.
+- No linter or type checker: skip the automation, not the reasoning.
+- No git: skip branch and commit mechanics, not verification.
 
----
-
-## File Architecture
-
-```
-sdlc-autopilot/
-├── SKILL.md                      ← Main pipeline (~318 lines, loaded on activation)
-├── GUIDANCE.md                   ← This document
-├── references/
-│   ├── deep-audit.md             ← OWASP + guardrail patterns (Full mode only)
-│   ├── deployment.md             ← 6 platform deploy guides (Phase 7 only)
-│   └── self-verification.md      ← Pipeline compliance ledger + LOG format (Ready Gate)
-├── scripts/
-│   ├── detect-toolchain.sh       ← Auto-detect language/framework/tools → JSON
-│   ├── run-gates.sh              ← Run linter/formatter/typechecker/tests
-│   └── run-evals.sh              ← Validate eval fixtures are well-formed
-├── evals/
-│   ├── evals.json                ← 16 test scenarios for validation
-│   └── fixtures/01-16/           ← Realistic codebases with planted bugs
-├── examples/                     ← Walkthroughs showing each mode
-├── README.md / CONTRIBUTING.md / LICENSE.txt / CHANGELOG.md
-```
-
-The entire skill is **SKILL.md + up to 3 reference files** at runtime: `deep-audit.md` (full mode), `deployment.md` (deploy phase), `self-verification.md` (Standard/Full ready gate). Quick mode loads only SKILL.md.
+The skill should never pretend evidence exists when tooling is absent. It should say what it could not verify.
 
 ---
 
-## Evals (Validation Test Suite)
+## Evaluation Philosophy
 
-The skill ships with 16 evaluation scenarios covering the full spectrum:
+The evaluation suite is now outcome-focused.
 
-| # | Scenario | Mode | What It Tests |
-|---|---|---|---|
-| 01 | Cosmetic button styling | Quick | Low-risk change, minimal pipeline |
-| 02 | Bug fix — search page crash | Standard | Root cause analysis, guard loop, regression tests |
-| 03 | Feature — dark mode toggle | Standard | New feature, state management, test writing |
-| 04 | Refactor — auth service extraction | Standard | Behavior-preserving refactor, contract tests |
-| 05 | Security — SQL injection | Full | OWASP audit, parameterized queries, full guard loop |
-| 06 | Audit finding — timeout + XSS | Standard | Timeout bug fix, hidden XSS discovery during audit |
-| 07 | No tooling project | Standard | Graceful degradation, manual test format |
-| 08 | User override — force full mode | Full | User override respected (low risk → full mode) |
-| 09 | Circuit breaker trigger | Standard | Fix-break spiral detection, revert behavior |
-| 10 | Null pattern — defensive coding | Standard | Null checks, type narrowing, guard pattern |
-| 11 | High risk never quick | Full | Hard rule: HIGH risk rejects Quick even if user asks; security fix → Full |
-| 12 | Mid-pipeline abort | Standard | User says "stop" mid-pipeline, changes reverted |
-| 13 | Monorepo scoped fix | Standard | Monorepo detection, scoped tests/scans |
-| 14 | Deployment phase | Standard | Deploy target detection, Phase 7 execution |
-| 15 | Python bug fix | Standard | Non-JS language, pytest, off-by-one error |
-| 16 | Self-verification & logging | Standard | LOG/ANNOUNCE lines, pipeline compliance check at Ready Gate |
+[evals/evals.json](/Users/muhammadqureshi/Projects/sdlc-autopilot/evals/evals.json) should answer questions like:
+
+- Did the bug actually get fixed?
+- Was there a guardrail?
+- Did tests meaningfully cover the failure mode?
+- Was the risky edge case surfaced or closed?
+
+It should not mainly answer questions like:
+
+- Did the agent emit the right ceremonial phase log?
+- Did it say “audit pass 2” out loud?
+
+That shift is important if the skill is supposed to stay valuable to people using agents pragmatically rather than performing process compliance.
 
 ---
 
-## Progress Logging & Self-Verification
+## Repo Map
 
-The skill uses two types of user-facing output to keep users informed:
-
-**LOG lines** — emitted DURING work. Format: `LOG: [Phase.Step] Description`. Concrete details: file names, counts, findings.
-
-**ANNOUNCE lines** — emitted at the END of each phase. One line, 15 words max. Phase-exit summary.
-
-```
-LOG: [P1.1] Parsed intent: bug-fix in SearchPage component
-LOG: [P1.2] Scanned 3 files: SearchPage.jsx, SearchPage.css, test file
-ANNOUNCE: "Bug fix identified. Implementing 2 steps."
-
-LOG: [P2.1] On branch fix/search-keyboard — safe to commit
-LOG: [P2.2] Step 1/2: Fixed keyboard handler in SearchPage.jsx
-ANNOUNCE: "Implementation complete. Running checks."
-```
-
-**Self-verification** runs at the Ready Gate. For Standard/Full modes (Phase 6), the agent loads `references/self-verification.md` and walks the execution ledger. For Quick mode (Phase 4), verification runs inline — the 4-item checklist doesn't require loading a file. Missing security checks block shipping. Other gaps are reported to the user.
-
-```
-LOG: [P6.1] Self-verification: 22/22 steps completed ✅
-ANNOUNCE: "Ready gate passed. Summary above."
-
-## Pipeline Compliance
-✅ 22/22 steps completed
-```
-
----
-
-## Critical Behaviors Summary
-
-| Behavior | Rule |
-|---|---|
-| **Follow-ups** | Pipeline shipped → start NEW pipeline. During ready gate → "change X" returns to Phase 2. |
-| **Mid-pipeline abort** | User says "stop"/"undo everything" → discard all changes (`git checkout -- .`), offer to delete created branch. |
-| **Monorepos** | Auto-detect (`packages/`, `apps/`, `pnpm-workspace.yaml`, `lerna.json`). Scope tests and root cause scans to affected packages. |
-| **Large codebases** | Cap ~10 files in Phase 1. Root cause scans use grep only — never scan entire codebase file-by-file. |
-| **Project rules conflict** | SDLC provides the PROCESS. Project rules provide the STANDARDS. Style conflicts → project rules win. Process conflicts → SDLC wins. |
-| **Can't find the bug** | Report what was searched. Ask ONE specific question. Never guess. |
-| **Secrets** | Never in output or commits. Never add .env to git. Reference by variable name only. |
-| **Stateless** | Each invocation is independent. No memory between pipeline runs. |
+- [SKILL.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/SKILL.md): live workflow.
+- [references/self-verification.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/self-verification.md): critical outcomes.
+- [references/deep-audit.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/deep-audit.md): deep security review prompts and patterns.
+- [references/deployment.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/deployment.md): deploy gating.
+- [scripts/verify-pipeline.sh](/Users/muhammadqureshi/Projects/sdlc-autopilot/scripts/verify-pipeline.sh): external evidence checks.
+- [scripts/run-agent-evals.py](/Users/muhammadqureshi/Projects/sdlc-autopilot/scripts/run-agent-evals.py): artifact-based eval harness.
+- [evals/evals.json](/Users/muhammadqureshi/Projects/sdlc-autopilot/evals/evals.json): manual scenarios and optional machine checks.
+- [examples/quick-change-walkthrough.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/examples/quick-change-walkthrough.md), [examples/bug-fix-walkthrough.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/examples/bug-fix-walkthrough.md), [examples/feature-walkthrough.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/examples/feature-walkthrough.md): aligned walkthroughs.

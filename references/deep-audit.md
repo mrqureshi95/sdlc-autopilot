@@ -1,6 +1,8 @@
-# Deep Audit Reference
+# Deep Audit Reference — AI-Assisted Security Review
 
 Loaded ONLY in full mode. Security checklists, guardrail patterns with code examples, API contract validation, migration guidance, convergence protocol.
+
+**Scope and limitations:** This is an AI-assisted review using known vulnerability patterns. It is NOT a professional penetration test, security audit, or expert human review. It can catch KNOWN patterns (OWASP Top 10 signatures, common anti-patterns, obvious misconfigurations, some straightforward concurrency mistakes). It CANNOT catch novel attack vectors, complex business logic flaws, subtle or distributed race conditions, subtle cryptographic errors, or context-dependent vulnerabilities that require full-system understanding. For HIGH-RISK domains (auth, payments, PII, crypto), always recommend expert human review in the change summary.
 
 ## 1. Security Deep Dive Checklist
 
@@ -38,132 +40,78 @@ PII encrypted at rest, masked in logs. No PII in error messages. GDPR: deletion 
 
 ### Null/Undefined Protection
 ```typescript
-// GUARD: Type narrowing utility
 function assertDefined<T>(val: T | null | undefined, name: string): T {
   if (val == null) throw new Error(`${name} must be defined`);
   return val;
 }
-// TEST:
-test('assertDefined throws on null', () => {
-  expect(() => assertDefined(null, 'userId')).toThrow('userId must be defined');
-});
-test('assertDefined passes valid value', () => {
-  expect(assertDefined('abc', 'userId')).toBe('abc');
-});
+// Test: assertDefined(null, 'userId') → throws; assertDefined('abc', 'userId') → 'abc'
 ```
 
 ### SQL Injection Prevention
 ```typescript
-// GUARD: Rejects raw interpolation in SQL
 function safeQuery(db: DB, sql: string, params: unknown[]) {
   if (sql.includes('${') || sql.includes("' +") || sql.includes('" +'))
     throw new Error('Raw interpolation in SQL — use parameterized queries');
   return db.query(sql, params);
 }
-// TEST:
-test('safeQuery rejects interpolation', () => {
-  const sql = `SELECT * FROM users WHERE id = '${userInput}'`;
-  expect(() => safeQuery(db, sql, [])).toThrow('Raw interpolation');
-});
+// Test: safeQuery(db, `SELECT * WHERE id = '${input}'`, []) → throws
 ```
 
 ### XSS Prevention
 ```typescript
-// GUARD: Sanitize HTML — minimal entity encoding for simple text output.
-// For rich HTML content, use a dedicated library (e.g., DOMPurify, sanitize-html).
+// For rich HTML, use DOMPurify or sanitize-html instead
 function sanitizeHtml(input: string): string {
   return input.replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 }
-// TEST:
-test('sanitizeHtml escapes script tags', () => {
-  expect(sanitizeHtml('<script>alert(1)</script>')).not.toContain('<script>');
-});
+// Test: sanitizeHtml('<script>alert(1)</script>') → no <script> tag
 ```
 
 ### Division by Zero
 ```typescript
-// GUARD: Safe division
 function safeDivide(a: number, b: number, fallback = 0): number {
   return b === 0 ? fallback : a / b;
 }
-// TEST:
-test('safeDivide returns fallback on zero', () => {
-  expect(safeDivide(10, 0)).toBe(0);
-  expect(safeDivide(10, 0, -1)).toBe(-1);
-});
+// Test: safeDivide(10, 0) → 0; safeDivide(10, 0, -1) → -1
 ```
 
 ### CSS Viewport Containment
 ```css
-/* GUARD: Prevent elements hidden by virtual keyboards */
 .input-container { position: sticky; bottom: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
 ```
 ```typescript
-// TEST:
-test('input visible with virtual keyboard', () => {
-  window.innerHeight = 400;
-  window.dispatchEvent(new Event('resize'));
-  expect(screen.getByRole('searchbox').getBoundingClientRect().bottom).toBeLessThan(400);
-});
+// Test: resize to 400px height → searchbox bottom < 400
 ```
 
 ### N+1 Query Prevention
 ```typescript
-// GUARD: Query budget assertion
 function assertQueryBudget(log: string[], max: number, ctx: string) {
   if (log.length > max) throw new Error(`${ctx}: ${log.length} queries > budget ${max}`);
 }
-// TEST:
-test('stays within query budget', async () => {
-  const queries: string[] = [];
-  db.on('query', q => queries.push(q));
-  await getUserList();
-  assertQueryBudget(queries, 3, 'getUserList');
-});
+// Test: track queries during getUserList() → assertQueryBudget(queries, 3, 'getUserList')
 ```
 
 ### CSRF Prevention
 ```typescript
-// GUARD: CSRF token middleware for state-changing requests
 function csrfProtection(req: Request, res: Response, next: NextFunction) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   const token = req.headers['x-csrf-token'] || req.body._csrf;
-  if (!token || token !== req.session?.csrfToken) {
+  if (!token || token !== req.session?.csrfToken)
     return res.status(403).json({ error: 'Invalid CSRF token' });
-  }
   next();
 }
-// TEST:
-test('rejects POST without CSRF token', async () => {
-  const res = await request(app).post('/api/transfer').send({ amount: 100 });
-  expect(res.status).toBe(403);
-});
-test('accepts POST with valid CSRF token', async () => {
-  const agent = request.agent(app);
-  const { body } = await agent.get('/api/csrf-token');
-  const res = await agent.post('/api/transfer')
-    .set('x-csrf-token', body.token).send({ amount: 100 });
-  expect(res.status).not.toBe(403);
-});
+// Test: POST without token → 403; POST with valid token → not 403
 ```
 
 ### Race Condition Prevention
 ```typescript
-// GUARD: Idempotency key
+// Use for obvious duplicate-request or idempotency gaps; not proof against subtle concurrency bugs.
 async function withIdempotency(key: string, fn: () => Promise<void>) {
   if (await cache.get(`idempotent:${key}`)) return;
   await cache.set(`idempotent:${key}`, '1', { ex: 3600 });
   await fn();
 }
-// TEST:
-test('duplicate requests ignored', async () => {
-  let calls = 0;
-  const fn = async () => { calls++; };
-  await withIdempotency('req-1', fn);
-  await withIdempotency('req-1', fn);
-  expect(calls).toBe(1);
-});
+// Test: call twice with same key → fn runs once
 ```
 
 ## 3. API Contract Validation

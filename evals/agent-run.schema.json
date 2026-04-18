@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sdlc-autopilot.local/evals/agent-run.schema.json",
+  "title": "SDLC Autopilot Agent Run Artifact",
+  "type": "object",
+  "required": ["eval_id", "mode", "summary"],
+  "properties": {
+    "eval_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["quick", "standard", "full"]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "strict_inversion": {
+      "type": "boolean"
+    },
+    "inversion_base_ref": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

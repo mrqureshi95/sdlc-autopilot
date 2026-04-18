@@ -6,29 +6,21 @@
 ## What Happens
 
 ### Mode Selection
-- Risk: LOW (color/style change)
-- User language: no signal
-- **Mode: Quick**
+- Risk: low.
+- User language: no override.
+- **Mode: Quick**.
 
-### Phase 1: Understand
-- Read `src/Button.css` — found `.btn-primary { background-color: #2563eb; }`
-- Read `src/Button.jsx` — confirms it uses the CSS class
-- Change is clear: update the hex color value
+### Quick Flow
+- Read the button styling file.
+- Confirm the change is a single-value cosmetic update with no behavior impact.
+- Change the color token or literal.
+- Run available checks.
+- Present a one-line summary and stop for confirmation.
 
-### Phase 2: Implement
-- Changed `#2563eb` (blue) to `#16a34a` (green) in `Button.css`
-- Fix-guard-test loop (lightweight): fix applied, no guardrail needed (cosmetic)
+Example summary:
 
-### Phase 3: Verify
-- Ran ESLint → clean
-- Ran Prettier → auto-formatted
-- Ran existing tests → all pass
-- Quick check: no other files reference the hex value directly
+```text
+Changed the primary button color from blue to green in Button.css. Verification: PASS. AI-reviewed, not human-audited.
+```
 
-### Phase 4: Ship
-**Summary:** "Changed primary button color from blue (#2563eb) to green (#16a34a) in Button.css. Tests pass."
-
-User says "ship it" → committed as `style(button): change primary color from blue to green`
-
-## Token Cost
-~4,900 tokens total skill overhead (SKILL.md only). No audit passes. No reference files loaded.
+If the work expands beyond that, Quick mode is no longer valid and the agent should promote to Standard immediately.

@@ -59,15 +59,15 @@ test('description', () => { ... });
 
 Every guardrail pattern MUST include a paired test.
 
-## How to Add Eval Test Cases
+## How to Add Evaluation Scenarios
 
 1. Edit `evals/evals.json` — add a new entry with:
    - `id`: next sequential number
    - `name`: kebab-case descriptive name
-   - `prompt`: the user prompt to test
+   - `prompt`: the user prompt to evaluate
    - `fixture`: path to fixture directory (optional)
    - `expected_mode`: quick | standard | full
-   - `assertions`: list of behaviors to verify
+   - `assertions`: list of human-verifiable criteria (checked manually, not automated)
 
 2. Create a fixture in `evals/fixtures/<id>-<name>/`:
    - 5-10 files max
@@ -77,7 +77,7 @@ Every guardrail pattern MUST include a paired test.
 
 ## Development Principles
 
-- **SKILL.md stays under 320 lines.** If you need to add content, find something to cut.
+- **SKILL.md stays under 340 lines.** If you need to add content, find something to cut.
 - **Reference files are loaded conditionally.** Don't add content to SKILL.md that's only needed in one mode.
 - **Every guardrail has a test.** No exceptions.
 - **Token efficiency matters.** Every line earns its keep.
@@ -85,12 +85,18 @@ Every guardrail pattern MUST include a paired test.
 
 ## Testing Changes
 
-After making changes, run the eval test cases:
+### Structural validation (automated)
 
-1. For each test case in `evals.json`, create a new conversation with the agent
+Run `sh scripts/run-evals.sh` — validates fixture directories exist, JSON is well-formed, and source files are present. This checks the eval suite itself, not the skill.
+
+### Skill evaluation (manual)
+
+Assertions in `evals.json` are human-verifiable criteria, not automated tests. To evaluate the skill:
+
+1. For each scenario in `evals.json`, create a new conversation with the agent
 2. Set the working directory to the corresponding fixture
-3. Provide the test prompt
-4. Verify all assertions pass
+3. Provide the scenario prompt
+4. Manually verify each assertion
 
 Focus on:
 - Mode selection correctness
@@ -98,4 +104,17 @@ Focus on:
 - Guardrail proportionality
 - Root cause pattern scanning
 - Circuit breaker activation
-- Phase announcement conciseness
+- Logging proportionality (trivial vs non-trivial)
+
+### Machine-checkable agent evals (artifact-based)
+
+The repo also supports an artifact-based harness:
+
+1. Create a run artifact directory per eval, for example `eval-runs/2-simple-bug-fix/`
+2. Include:
+   - `meta.json` matching `evals/agent-run.schema.json`
+   - `patch.diff` containing the agent's patch for the fixture
+   - `transcript.md` if you want transcript-based machine checks
+3. Run `python3 scripts/run-agent-evals.py --runs-dir eval-runs`
+
+The harness copies the fixture to a temp workspace, initializes git, applies the patch, runs `verify-pipeline.sh`, and evaluates any `machine_checks` declared in `evals/evals.json`.

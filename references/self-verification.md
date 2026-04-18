@@ -1,235 +1,104 @@
-# Self-Verification — Pipeline Compliance Check
+# Self-Verification — Critical Outcomes
 
-Loaded at Ready Gate (Phase 6) for Standard and Full modes. Quick mode verifies inline without loading this file — its 4-item checklist is simple enough to check mentally.
+Loaded at the Ready Gate for Standard and Full mode. Quick mode verifies inline.
 
----
-
-## Execution Ledger Template
-
-The agent maintains this ledger mentally throughout execution. At the Ready Gate, it reviews the ledger and flags any gaps.
-
-### Quick Mode Ledger
-```
-PIPELINE: Quick | Risk: [LOW] | Started: [timestamp/phase]
-─────────────────────────────────────────────────────
-[P1] UNDERSTAND
-  □ Read relevant file(s): [list]
-  □ Confirmed what needs to change: [yes/no]
-  □ Ambiguity resolved: [N/A | asked question]
-  □ LOG emitted: [yes/no]
-
-[P2] IMPLEMENT
-  □ Change made: [file(s)]
-  □ Followed existing conventions: [yes/no]
-  □ Skill delegation checked: [delegated to X | none relevant | list unavailable]
-  □ LOG emitted: [yes/no]
-
-[P3] VERIFY
-  □ Linter/formatter run: [pass | N/A]
-  □ Tests run: [N pass | N/A]
-  □ Side effects checked: [yes/no]
-  □ LOG emitted: [yes/no]
-
-[P4] SHIP
-  □ Summary presented to user: [yes/no]
-  □ Branch safety check: [on feature branch | warned about main | user overrode]
-  □ User confirmation received: [yes/no]
-```
-
-### Standard Mode Ledger
-```
-PIPELINE: Standard | Risk: [LOW/MEDIUM/HIGH] | Intent: [type]
-─────────────────────────────────────────────────────
-[P1] UNDERSTAND & PLAN
-  □ Intent parsed: [bug-fix | feature | improvement | refactor | performance]
-  □ Codebase scanned: [N files read]
-  □ Skills checked: [delegated to X | none relevant | list unavailable]
-  □ Implementation brief generated: [yes/no]
-    - Acceptance criteria: [N items]
-    - Files to change: [list]
-  □ Test strategy planned: [yes/no]
-  □ LOG emitted: [yes/no]
-
-[P2] IMPLEMENT
-  □ Branch check: [on feature branch | warned about main | user overrode]
-  □ Plan steps executed: [N of M]
-  □ Skills delegated: [list | none]
-  □ Scope control: [stayed within plan | noted extras for summary]
-  □ LOG emitted: [yes/no]
-
-[P3] GATE & TEST
-  □ Linter run: [pass | fixed N | N/A]
-  □ Formatter run: [pass | fixed N | N/A]
-  □ Type checker run: [pass | fixed N | N/A]
-  □ Existing tests: [N pass | N fail from our change (fixed) | N pre-existing]
-  □ Fix-Guard-Test-Verify loop applied to original request:
-    - Fix confirmed: [yes/no]
-    - Root cause scanned: [pattern found N times | no pattern]
-    - Guardrail added: [type: description]
-    - Tests written: [N regression, N guardrail, N edge case]
-    - Tests verified: [all pass]
-  □ LOG emitted: [yes/no]
-
-[P4] AUDIT
-  □ Pass 1 (Correctness) run: [yes/no]
-    - Findings: [N structural, N behavioral, N cosmetic]
-    - Each finding looped: [yes/no]
-  □ Pass 2 (Security) run: [yes/no]
-    - Findings: [N structural, N behavioral, N cosmetic]
-    - Each finding looped: [yes/no]
-    - Security findings got full loop: [yes | N/A]
-  □ Circuit breaker triggered: [N times | never]
-  □ Tests run after each pass: [yes/no]
-  □ LOG emitted: [yes/no]
-
-[P5] REGRESSION & VERIFICATION
-  □ Full test suite run: [N pass, N fail]
-  □ Regressions fixed: [N | none]
-  □ Wiring verified (imports, routes, exports): [yes/no]
-  □ Guardrail completeness check:
-    - All fixes still present: [yes/no]
-    - All guardrails still present: [yes/no]
-    - All guardrail tests pass: [yes/no]
-  □ Docs updated: [list | N/A]
-  □ LOG emitted: [yes/no]
-
-[P6] READY GATE
-  □ Change summary generated: [yes/no]
-  □ Self-verification run: [yes/no] ← THIS CHECK
-  □ All ledger items satisfied: [yes/no]
-  □ Gaps flagged to user: [list | none]
-
-[P7] SHIP (if triggered)
-  □ Committed: [hash]
-  □ Pushed: [branch]
-  □ PR created: [yes/no | N/A]
-  □ CHANGELOG updated: [yes/no | N/A]
-  □ Deployed: [yes/no | N/A]
-  □ Health check: [pass | N/A]
-```
-
-### Full Mode Additions to Ledger
-```
-[P1] ADDITIONS
-  □ User checkpoint: plan presented and approved: [yes/no]
-
-[P4] ADDITIONS
-  □ Pass 3 (Convergence) run: [yes/no | skipped — zero findings in audit passes 1+2]
-    - Structural issues remaining: [N | none]
-  □ Security Deep Dive: [yes/no]
-    - deep-audit.md loaded: [yes/no]
-    - OWASP Top 10 reviewed: [yes/no]
-    - Auth/authz flow verified: [yes/no]
-    - Data handling checked: [yes/no]
-    - Dependencies assessed: [yes/no]
-
-[P5] ADDITIONS
-  □ ALL findings (including cosmetic) have guardrails: [yes/no]
-  □ Architectural guardrails considered: [added N | none needed]
-```
+This file is the second verification layer. The first is `scripts/verify-pipeline.sh`, which checks real repo state. If the script and this self-check disagree, the script wins.
 
 ---
 
-## Compliance Check Algorithm
+## How To Use This File
 
-At the Ready Gate, the agent performs this check:
+Ask one question for each outcome: does the evidence exist right now?
 
-1. **Walk the ledger** for the current mode (Quick/Standard/Full)
-2. For each checkbox:
-   - ✅ Completed → pass
-   - ⚠️ Skipped with valid reason (e.g., "N/A — no test framework") → pass with note
-   - ❌ Not done, no valid reason → **compliance gap**
-3. **Report gaps** to the user in the Ready Gate summary under a "Pipeline Compliance" section:
-   ```
-   ## Pipeline Compliance
-   ✅ 22/23 steps completed
-   ⚠️ 1 step skipped with reason:
-     - Formatter: N/A — no formatter configured
-   ```
-   OR if there are gaps:
-   ```
-   ## Pipeline Compliance
-   ⚠️ 20/23 steps completed — 3 gaps:
-     - [P3] Root cause scan not performed
-     - [P4] Pass 2 security checklist not run
-     - [P5] Guardrail completeness check skipped
-   Recommendation: Re-run phases 3-5 to close gaps.
-   ```
+- If yes, mark it complete.
+- If no, either fix the gap or report it.
+- If the outcome is marked **BLOCK**, do not ship until it is resolved.
 
-4. **Severity of gaps:**
-   - Missing security checks → **BLOCK shipping**. Tell user: "Security verification incomplete. Running security pass before ship."
-   - Missing audit pass → warn strongly but allow user override
-   - Missing cosmetic steps → note only
-   - Missing tests → warn, offer to write them
-
-5. **Quick mode**: The ledger is shorter. Compliance check is lighter. Missing verify step → warn. Everything else → note.
+Keep the self-check short. Focus on whether the change is actually shippable, not whether every micro-step was narrated.
 
 ---
 
-## LOG Format
+## Quick Mode Inline Check
 
-Throughout execution, the agent emits LOG lines to keep the user informed of progress. These are distinct from ANNOUNCE lines (which are phase-exit summaries).
+Quick mode does not need this file unless the agent wants it.
 
-**Format:** `LOG: [Phase.Step] Description`
-
-**Examples:**
-```
-LOG: [P1.1] Parsed intent: bug-fix in SearchPage component
-LOG: [P1.2] Scanned 3 files: SearchPage.jsx, SearchPage.css, SearchPage.test.jsx
-LOG: [P1.3] No relevant installed skills found
-LOG: [P1.4] Implementation brief: 2 acceptance criteria, 1 file to change
-ANNOUNCE: "Bug fix identified. Implementing 2 steps."
-
-LOG: [P2.1] On branch fix/search-keyboard — safe to commit
-LOG: [P2.2] Step 1/2: Fixed keyboard handler in SearchPage.jsx
-LOG: [P2.3] Step 2/2: Updated event binding
-ANNOUNCE: "Implementation complete. Running checks."
-
-LOG: [P3.1] ESLint: pass (0 errors)
-LOG: [P3.2] Prettier: 1 file reformatted
-LOG: [P3.3] Existing tests: 4 pass
-LOG: [P3.4] Root cause scan: found same pattern in 2 other files — fixed
-LOG: [P3.5] Guardrail: added keyboard event assertion
-LOG: [P3.6] New tests: 2 regression, 1 guardrail — all pass
-ANNOUNCE: "7 tests pass (3 new, 1 guardrail). Linting clean."
-
-LOG: [P4.1] Pass 1 correctness: 1 behavioral finding (missing error case)
-LOG: [P4.2] Fixed + guarded + tested behavioral finding
-LOG: [P4.3] Pass 2 security: no findings
-ANNOUNCE: "Audit done. 1 issue: fixed 1, guarded 1, tested 1."
-
-LOG: [P5.1] Full test suite: 8 pass, 0 fail
-LOG: [P5.2] Guardrail completeness: 2/2 guardrails verified
-ANNOUNCE: "All 8 tests pass. 2 guardrails verified. Docs updated."
-
-LOG: [P6.1] Self-verification: 22/22 steps completed ✅
-ANNOUNCE: "Ready gate passed. Summary above."
-```
-
-**Rules:**
-- LOG lines are informational — they appear DURING work, not after
-- ANNOUNCE lines are summaries — they appear at the END of each phase
-- Every phase gets at least one LOG line
-- LOG lines should be concrete: include file names, counts, specific findings
-- Keep each LOG line under 80 characters where possible
-- If a step is skipped, LOG why: `LOG: [P3.1] Linter: skipped — no linter configured`
+1. The file was read before editing.
+2. The change is present in the codebase.
+3. Existing style and conventions were preserved.
+4. Available checks were run, or the lack of tooling was stated.
 
 ---
 
-## Quick Mode Self-Verification
+## Critical Outcomes
 
-Quick mode uses a compressed version:
+| # | Outcome | Evidence | Blocked if missing? |
+|---|---|---|---|
+| 1 | Scope is clear | Brief summary includes acceptance criteria, source of truth, and relevant edge cases | No, warn |
+| 2 | TDD happened or was concretely blocked | Failing reproducer exists before the fix, or the summary states a specific blocker | **YES for structural, behavioral, and security work when a harness exists** |
+| 3 | Single source of truth and contract safety were preserved | No duplicate schema, validator, config, or public contract drift without explicit justification | **YES if the change introduces parallel truth or breaks callers** |
+| 4 | Fix-Guard-Test-Verify was evidenced | Structural and security findings have a real fix, a guardrail, tests, and a root-cause scan or explicit local-only justification | **YES for structural and security work** |
+| 5 | Tests are meaningful and passing | Test output passes, changed tests are not tautological, and edge or negative coverage exists when relevant | **YES for structural and security work** |
+| 6 | Edge cases are closed | Relevant boundaries are tested, guarded, impossible by construction, or explicitly deferred as unresolved risk | **YES for structural and security work** |
+| 7 | Security review ran when required | Standard and Full mode performed the security pass; Full mode also loaded `references/deep-audit.md` | **YES for Standard and Full** |
+| 8 | Script output and self-check agree | `verify-pipeline.sh` output is shown and any contradiction was resolved or escalated explicitly | **YES** |
+| 9 | Limitations and human-review guidance are honest | Summary includes the AI-review limitation line and the high-risk human-review note when applicable | **YES** |
+| 10 | Deploy approval is explicit | If deployment is requested, the user approved the detected target, environment, and command | **YES for deploys** |
 
+---
+
+## Ready Gate Report Format
+
+Use this shape at the Ready Gate:
+
+```markdown
+## Verification
+
+### Script Output
+[paste raw verify-pipeline.sh output here]
+
+### Critical Outcomes
+✅ [list completed outcomes]
+⚠️ [list warnings]
+❌ [list blockers]
+
+### Agreement
+AGREE
+or
+CONTRADICTION — [describe mismatch, diagnosis, and action]
+
+### Limitations
+AI-assisted review — catches known patterns, not novel vulnerabilities.
+[If high-risk:] HUMAN REVIEW RECOMMENDED: This change touches [domain].
 ```
-LOG: [Q1] Reading SearchPage.jsx — confirm color change needed
-ANNOUNCE: "Quick fix: Update button color in SearchPage."
 
-LOG: [Q2] Changed background-color in SearchPage.css line 42
-ANNOUNCE: "Change applied."
+If automatic cross-model review is unavailable, add the optional copyable prompt after the verification report.
 
-LOG: [Q3] ESLint: pass. 4 existing tests pass.
-ANNOUNCE: "Verified. Tests pass."
+---
 
-LOG: [Q4] Self-check: 4/4 steps done ✅
-[Summary presented, waiting for user]
-```
+## Severity Rules
+
+| Missing outcome | Action |
+|---|---|
+| 2, 3, 4, 5, 6, 7, 8, 9 | **BLOCK** shipping until fixed or explicitly escalated where allowed |
+| 10 | **BLOCK** deploy only |
+| 1 | Warn, but do not block if the diff is otherwise clear |
+
+If tooling is unavailable, say so plainly. Do not pretend the outcome exists.
+
+---
+
+## Cross-Model Review Prompt Spec
+
+If no second model is available through the current agent or toolchain, generate a copyable prompt in a fenced code block that includes:
+
+1. The full diff.
+2. What was requested.
+3. What was changed, tested, guarded, and already reviewed.
+4. Six adversarial tasks:
+  (1) inspect changed logic line by line,
+  (2) find missed edge cases,
+  (3) find security gaps,
+  (4) judge test quality,
+  (5) look for guardrail bypasses,
+  (6) identify what should have changed but did not.
+5. The output format: severity, file:line, issue, suggested fix.

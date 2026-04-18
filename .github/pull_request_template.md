@@ -12,8 +12,8 @@
 
 ## Checklist
 
-- [ ] SKILL.md stays under 320 lines
-- [ ] `sh scripts/run-evals.sh` passes
+- [ ] SKILL.md stays under 340 lines
+- [ ] `sh scripts/run-evals.sh` passes (validates fixture structure)
 - [ ] New eval fixtures include planted issues for the agent to find
 - [ ] Reference files only contain mode-specific content
 - [ ] Shell scripts pass `sh -n` syntax check

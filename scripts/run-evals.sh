@@ -1,7 +1,9 @@
 #!/bin/sh
-# run-evals.sh — Validate eval fixtures are well-formed and structurally correct.
-# Checks fixture directories exist, required files present, and evals.json is valid.
-# POSIX-compatible. Does NOT run agents — validates the eval suite itself.
+# run-evals.sh — Validate eval fixture STRUCTURE (directories exist, JSON valid, files present).
+# Does NOT run the skill against fixtures or verify assertions.
+# Assertions in evals.json are human-verifiable criteria for manual evaluation.
+# To evaluate the skill itself, run each scenario with an AI agent and check assertions manually.
+# POSIX-compatible.
 
 set -e
 
@@ -32,7 +34,7 @@ inc_warn() {
 }
 
 # --- Check evals.json exists and is valid JSON ---
-printf "=== Validating evals.json ===\n"
+printf "=== Validating evals.json (fixture structure only — assertions require manual evaluation) ===\n"
 if [ ! -f "$EVALS_JSON" ]; then
   inc_fail "evals.json not found at $EVALS_JSON"
   printf "\n=== Cannot continue without evals.json ===\n"

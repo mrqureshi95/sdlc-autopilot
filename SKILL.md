@@ -1,318 +1,183 @@
 ---
 name: sdlc-autopilot
-description: "Full SDLC pipeline for AI coding agents — turns any prompt into tested, audited, guarded code. Three risk-based modes (Quick/Standard/Full) covering understand, plan, implement, test, audit, guard, and ship. Core innovation: Fix-Guard-Test-Verify loop ensures every fix is permanent by adding guardrails, testing them, and scanning for the same pattern elsewhere. Self-audits in 2 passes (correctness + security), auto-detects toolchains, writes tests even without a framework, and degrades gracefully. Works with any language, any agent."
+description: "SDLC workflow for AI coding agents — turns coding prompts into tested, guarded code with risk-based modes (Quick/Standard/Full), expert mode, Fix-Guard-Test-Verify, TDD bias, edge-case closure, SSOT, DRY-with-judgment, and honest AI-review limits. Use for bug fixes, features, refactors, security work, API changes, deployment changes, or audits."
 license: MIT
 ---
 
 # SDLC Autopilot
 
-Transforms any rough prompt into a full SDLC execution — tailored to risk.
-The user types one messy sentence. You deliver deploy-ready, tested, audited,
-guarded code where every fix is protected against recurrence.
+One rough prompt in. A safer implementation workflow out.
 
-**Principles:** (1) Tailored to risk, never one-size-fits-all. (2) Token-frugal — every token earns its keep. (3) User provides the prompt, everything else is automatic. (4) Fix it, guard it, test the guard, verify. (5) Respect project conventions and installed skills. (6) Fail safe — never auto-deploy, warn before committing to main/master (user can override), never expose secrets.
+**Principles:** Risk first. Fix the root cause. Guard against recurrence. Prefer TDD when practical. Preserve the single source of truth. Stay DRY with judgment. Cover relevant edge cases before stopping. Respect project conventions. Never auto-deploy. Never overclaim what AI review can prove.
 
-**Token budget:** SKILL.md (~4,900 tokens of content) is loaded on activation. Additional reference files loaded only when needed: deep-audit.md (~2,100 tokens, full mode only), deployment.md (~2,100 tokens, deploy phase only), self-verification.md (~2,400 tokens, Standard/Full ready gate only; Quick mode verifies inline). Max 3 reference files loaded per invocation beyond SKILL.md. Delegated skill files do not count toward this limit.
+**Token policy:** Keep the core skill lean. Load reference files only when needed: `references/self-verification.md` at the Ready Gate, `references/deep-audit.md` in Full mode, and `references/deployment.md` only when deployment is requested.
 
 ---
 
-## The Fix-Guard-Test-Verify Loop
+## AI Review Limits
 
-This is the core innovation. It applies to EVERY issue — the original request AND anything found during audit. Without this loop, bugs get patched but recur. With it, every fix is permanent.
+This workflow includes AI-assisted review. It is NOT a professional security audit, penetration test, or expert human review.
 
-**The 5 steps:**
+**AI review can catch:** known vulnerability patterns, obvious null/undefined bugs, common input-validation gaps, off-by-one mistakes, hardcoded secrets, and familiar unsafe APIs such as `eval` or `innerHTML`.
 
-1. **FIX** the issue. Apply the code change.
-2. **ROOT CAUSE:** Why did this happen? Is it a pattern? Grep for the same pattern elsewhere. If found → fix up to 5 occurrences, note the rest. This is a single grep — cheap, but catches systemic issues.
-3. **GUARD:** Prevent this CLASS of issue from recurring. For features, focus guards on edge case coverage and contract tests rather than recurrence prevention. If a guardrail already exists for this class of issue (e.g., the project already uses parameterized queries), verify it covers the current case rather than adding a duplicate. Choose the lightest effective guardrail using this priority (use the FIRST viable):
-   - Type/compiler enforcement (caught at build time)
-   - Linter/static analysis rule (caught before tests)
-   - Runtime assertion/invariant (caught at test/runtime)
-   - Targeted test (caught during test suite)
-   - Code comment at danger point (caught during review)
-4. **TEST THE GUARD:** Write tests that verify: the fix works, the guardrail catches recurrence, and edge cases are covered.
-5. **VERIFY:** Run the targeted tests. Pass → continue. Fail → fix and loop back to step 1. Existing tests break → circuit breaker (revert, note as deferred).
+**AI review cannot reliably catch:** novel attack paths, business-logic flaws, subtle distributed race conditions, cryptographic mistakes, supply-chain issues, or system-level risks outside the loaded context.
 
-**Proportionality rules — match effort to severity:**
+**Required language:** never say "security audit passed" or "professionally audited". Always describe the result as "AI-assisted review". For auth, payments, PII, crypto, medical, or legal work, the final summary must include: "HUMAN REVIEW RECOMMENDED: This change touches [domain]."
 
-- **STRUCTURAL** (logic error, security hole, missing validation, race condition, data corruption): Full loop — Fix + Root cause + Guard + Test + Verify
-- **BEHAVIORAL** (missing error handling, incomplete edge case, wrong return value): Partial loop — Fix + Guard + Test + Verify (skip root cause scan)
-- **COSMETIC** (naming, formatting, minor DRY, style): Quick/Standard → Fix only. Full mode → Fix + code comment guard.
-- **SECURITY findings ALWAYS get the full loop regardless of severity. No exceptions.**
+---
+
+## Fix-Guard-Test-Verify
+
+This is the core of the skill. Apply it to the original request and to every structural, behavioral, or security issue discovered during verification. Cosmetic work stays proportional.
+
+1. **Fix** the issue.
+2. **Root cause:** explain why it happened. Search for the same pattern elsewhere. Read every candidate in context before changing it. Fix only confirmed matches with the same risk and no existing guard. Cap at 5 fixes; if more remain, triage by severity and report the rest as unresolved risk.
+3. **Guard:** add the lightest effective protection for the bug class. Prefer this order: type/compiler rule, linter/static analysis, runtime assertion/invariant, targeted test, comment as a last resort.
+4. **Test the guard:** the test set must prove the fix, prove the guardrail matters, and cover the relevant edge cases.
+5. **Verify:** run the tests. If the fix fails its own checks, retry the loop. Maximum 3 retries per finding. If it still does not converge, stop and defer to the user. If a follow-on fix breaks unrelated existing tests, revert that follow-on fix and report it as deferred.
+
+**Test quality rules:** every new or updated regression test should satisfy these unless the project tooling makes one impossible, in which case say why.
+
+- **Inversion:** the test should fail on the pre-fix code.
+- **Behavior over implementation:** assert outputs, side effects, or errors, not internal calls.
+- **Negative coverage:** include at least one bad, boundary, or malformed-input case.
+- **Minimal mocking:** mock only external I/O.
+
+**Proportionality:**
+
+- **Structural:** logic errors, data loss, security holes, race conditions, validation gaps. Use the full loop.
+- **Behavioral:** wrong return values, missing error handling, incomplete boundary handling. Use the loop with a targeted root-cause scan or an explicit local-only justification.
+- **Cosmetic:** naming, formatting, copy, low-risk DRY cleanup. Fix only unless Full mode requires a stronger guard.
+- **Security findings:** always use the full loop.
+
+---
+
+## Engineering Standards
+
+Standard and Full mode treat these as non-negotiable. Quick mode applies them proportionally.
+
+1. **TDD bias:** if a failing reproducer is cheap and the harness exists, write it before the fix. If not, state the blocker and add the regression test immediately after the fix.
+2. **Single source of truth:** extend the canonical schema, type, validator, config, helper, or contract instead of creating a parallel copy.
+3. **DRY with judgment:** remove duplication that increases bug surface area. Do not abstract a one-off into a framework.
+4. **Edge-case closure:** before stopping, account for the relevant boundaries: empty, null, undefined, malformed, unauthorized, timeout, retry, concurrency, backward compatibility, accessibility, and performance. Each relevant edge case must be tested, guarded, impossible by construction, or deferred as explicit unresolved risk. Deferred structural or security edge cases block shipping.
+5. **Contract safety:** if an API, data model, event shape, schema, or config contract changes, update callers or provide a compatibility path.
+6. **Smallest safe change:** fix the root cause without speculative refactors.
 
 ---
 
 ## Mode Selection
 
-**Signal 1 — Risk classification:**
-- LOW → Quick: text/copy, color/style, config values, comments, simple renames, docs-only
-- MEDIUM → Standard: bug fixes, new UI components, new functions, form fields, validation, behavior-preserving refactors
-- HIGH → Full: auth/authz, payments, PII/data handling, API changes, DB schema, shared libraries, security fixes, deployment config, env vars, multi-service
+Choose the mode in this order.
 
-**Signal 2 — User language:**
-- "just", "quick", "simple", "only" → bias Quick
-- "careful", "thorough", "full", "make sure", "full pipeline", "full audit", "full sdlc" → Full mode
-- No signal → use risk classification
-- Explicit override always wins
+| Condition | Mode |
+|---|---|
+| Security, auth, payments, PII, crypto, deployment, DB schema, shared-library contract changes | **Full** |
+| User explicitly asks for `full`, `thorough`, `careful`, or equivalent | **Full** |
+| Bug fixes, features, validation, refactors, performance work | **Standard** |
+| Text, color, config, comments, docs, simple rename with no behavior impact | **Quick** |
+| Ambiguous risk | **Standard** |
 
-**Hard rules:**
-- HIGH risk can NEVER be Quick mode, even if user asks. Explain why and offer Standard as the lightest option.
-- User can ALWAYS force Full mode regardless of risk level. If user says "full pipeline", "full audit", "full sdlc", or explicitly requests the complete pipeline — use Full mode even for low-risk changes.
-- Ambiguous risk (can't clearly classify) → default to Standard.
+Words like `just` or `quickly` can bias low-risk work toward Quick mode, but never below the safe floor above.
 
----
+### Expert Mode
 
-## Quick Mode (4 Phases)
+If the user, repo instructions, or project guidance explicitly says `expert mode`, `power mode`, or `I know what I'm doing`, keep the same safety rules, Fix-Guard-Test-Verify loop, Ready Gate, and honest disclosure, but strip out optional ceremony. Do not skip TDD, edge-case closure, guardrails, security review, or verification. Expert mode is a presentation shortcut, not a safety downgrade.
 
-**PHASE 1: UNDERSTAND** — Read relevant file(s) (usually 1-2). Confirm what needs to change. If ambiguous → ask ONE question, then proceed. ANNOUNCE: "Quick fix: [brief description]."
-
-**PHASE 2: IMPLEMENT** — Make the change following existing conventions. Delegate to relevant installed skills if applicable. Run the fix-guard-test loop (lightweight): fix the issue, add a brief code comment if non-obvious. Guardrail and root cause scan are OPTIONAL in quick mode. ANNOUNCE: "Change applied."
-
-**PHASE 3: VERIFY** — Run linter/formatter if available → auto-fix. Run existing test suite if available. If tests fail due to our change → fix. Quick check: does this affect anything else? ANNOUNCE: "Verified. Tests pass."
-
-**PHASE 4: SHIP** — **HARD STOP.** Self-verify inline (no file load needed): confirm file read, change made, conventions followed, tests run. Present one-line summary: "Changed X in file Y. Tests pass. Pipeline: N/N steps." Wait for user confirmation before proceeding. If on main/master → warn: "You are on main. Creating branch type/short-description. Say 'commit to main' to override." If user overrides → commit to main. Commit with conventional message, push to branch. Deploy if applicable.
+State the selected mode when it is non-obvious, promoted from Quick, or elevated by risk.
 
 ---
 
-## Standard Mode (7 Phases — The Default)
+## Quick Mode
 
-### PHASE 1: UNDERSTAND & PLAN
-Why: Misunderstanding the request wastes everything downstream.
+Use this only for truly trivial, localized changes.
 
-1. Parse intent: bug-fix | feature | improvement | refactor | performance
-2. Scan codebase for relevant context:
-   - List file tree (2 levels, respect .gitignore)
-   - Grep for keywords from user's prompt
-   - Read ONLY directly relevant files (cap: ~10 files). If files exceed ~30% of available context → read key sections or summarize rather than loading in full. Prioritize files directly mentioned in the user's prompt.
-   - Check for project rules: .cursorrules, CONTRIBUTING.md, .editorconfig
-3. Scan available skills for ANY installed skill relevant to this change
-4. Generate Implementation Brief:
-   - Problem statement (rewritten clearly)
-   - Root cause hypothesis (for bugs)
-   - Acceptance criteria (3-5 testable conditions)
-   - Files to change and regression risks
-   - Skills to delegate to (if any)
-5. Plan implementation steps (numbered, concise)
-6. Plan test strategy (what types, what edge cases)
+- Read the target file.
+- Make the smallest safe change.
+- Run lint/tests if available.
+- Present a one-line summary with the verification result and the limitation note: `AI-reviewed, not human-audited.`
+- Hard stop for user confirmation before commit, push, PR, or deploy.
 
-EXIT: If bug can't be found or request is genuinely ambiguous → ask ONE clarifying question. Never guess between equally likely options.
-
-ANNOUNCE: "[intent type] identified. Implementing [N] steps."
-
-### PHASE 2: IMPLEMENT
-Why: Disciplined implementation prevents scope drift and keeps changes reviewable.
-
-1. Git branch check (if git repo): if on main/master → warn: "You are on main. Creating branch type/short-description. Say 'commit to main' to override." If user overrides → stay on main. If already on a feature/dev/other branch → stay on it and commit there.
-2. Execute plan step-by-step
-3. Delegate to relevant installed skills: scan available_skills — if ANY skill's description matches the domain, read its SKILL.md and follow it. Always scan. Never hardcode.
-4. Follow existing project conventions
-5. If new dependencies: install, note for summary
-6. If DB schema changes: create migration file
-
-RULES: SCOPE CONTROL — implement ONLY what the plan specifies. Note unrelated improvements in summary but do NOT change them. Never expose secrets. Respect project rules found in Phase 1.
-
-ANNOUNCE: "Implementation complete. Running checks."
-
-### PHASE 3: GATE & TEST
-Why: Catching issues here is 10x cheaper than catching them in production.
-
-1. Run linter → auto-fix fixable issues
-2. Run formatter → auto-fix
-3. Run type checker → fix type errors in changed files
-4. Run existing test suite: failures from our change → fix; pre-existing failures → note and ignore
-5. Apply fix-guard-test-verify loop to the ORIGINAL request:
-   a. Confirm the fix is in place
-   b. Root cause: why did this bug/gap exist? Same pattern elsewhere? (single grep) If found → fix up to 5, note rest
-   c. Guard: add the lightest effective guardrail (type > linter > assertion > test > comment)
-   d. Write targeted tests: regression test for original issue, test that guardrail works, edge cases
-   e. Verify: run new tests → must pass
-6. Update existing tests whose expectations intentionally changed (add comment explaining WHY)
-7. Run ALL tests (new + existing) to confirm
-
-IF PROJECT HAS NO TOOLING: skip linter/formatter/typechecker, still write tests in logical format, suggest framework but don't block pipeline.
-
-GATE CAP: 3 auto-fix cycles max, then proceed to audit.
-
-ANNOUNCE: "N tests pass (M new, K guardrail). Linting clean."
-
-### PHASE 4: AUDIT (2 passes)
-Why: Self-review catches what implementation missed. Phase 3 handled the original request; this phase audits the FULL diff for issues beyond that — things introduced during implementation, missed edge cases, and security concerns. The loop ensures every finding is permanently fixed, not just patched.
-
-**Pass 1 — Correctness Checklist:** Walk through each item mechanically against the diff. Do NOT rely on general "does this look right" judgment — check each item explicitly.
-- [ ] Each acceptance criterion satisfied? (check one by one)
-- [ ] Off-by-one errors in loops/indices?
-- [ ] Null/undefined access on any new variable or return value?
-- [ ] Race conditions on shared state or async operations?
-- [ ] Error handling: every new call site has a failure path?
-- [ ] If API changed: grep for callers, verify compatibility
-- [ ] Hardcoded values that should be config/env vars?
-
-For each STRUCTURAL finding → apply the fix-guard-test-verify loop:
-  1. Fix it
-  2. Root cause: same pattern elsewhere? (grep) Fix up to 5, note rest
-  3. Guard: add guardrail for this CLASS of issue
-  4. Test: write test that catches this finding AND verifies the guardrail
-  5. Verify: run new test → must pass
-
-For each BEHAVIORAL finding → Fix + Guard + Test + Verify (skip root cause scan)
-For each COSMETIC finding → Fix only. No guardrail needed. (Full mode overrides this — see Full Mode Additions.)
-
-Run tests after all pass-1 fixes.
-
-**Pass 2 — Security & Quality Checklist:** Walk through each item mechanically against the diff.
-- [ ] Input validation: every new user input sanitized/validated?
-- [ ] Injection: raw SQL, eval(), innerHTML, dangerouslySetInnerHTML?
-- [ ] Auth: new endpoints have auth + authz checks?
-- [ ] Secrets: no hardcoded secrets, tokens, API keys?
-- [ ] XSS/CSRF: output encoding, CSRF tokens on mutations?
-- [ ] Performance: N+1 queries, unnecessary re-renders, memory leaks (obvious only)?
-- [ ] Accessibility (UI changes): keyboard nav, ARIA labels?
-- [ ] Code quality: naming, DRY, complexity (don't gold-plate)?
-
-For each finding → same fix-guard-test-verify loop with same proportionality rules. Security findings ALWAYS get the full loop regardless of severity. Security guardrails are mandatory.
-
-Run tests after all pass-2 fixes.
-
-CIRCUIT BREAKER: If fixing a finding causes a NEW test failure → REVERT THE FIX. Note in summary as "identified but not fixed — requires manual review." Do not enter a fix-break spiral.
-
-ANNOUNCE: "Audit done. N issues: fixed M, guarded K, tested J."
-
-### PHASE 5: REGRESSION & FINAL VERIFICATION
-Why: This is the last line of defense. Verify everything works together and no guardrails were accidentally removed during later fixes.
-
-1. Run FULL test suite (new + existing + guardrail tests) — the ONLY full-suite run post-implementation
-2. If regressions: expected (behavior change) → update test with explanation; unexpected → fix with guard-test-verify loop, re-run
-3. Verify wiring: imports, exports, routes, API endpoints
-4. **Guardrail completeness check** — for each issue fixed in Phases 3-4, confirm:
-   a. The fix is present and correct
-   b. The guardrail is in place (not accidentally removed during later fixes)
-   c. The guardrail test exists and passes
-   This is a COMPLETENESS CHECK, not a re-audit. Quick scan.
-5. If applicable: add error logging for new error paths
-6. Update documentation ONLY IF the change affects it: README, API docs, inline comments for non-obvious logic, CHANGELOG
-
-ANNOUNCE: "All N tests pass. M guardrails verified. Docs updated."
-
-### PHASE 6: READY GATE
-Why: The user sees exactly what happened and decides what's next. This phase also verifies the pipeline itself was followed correctly.
-
-1. **Self-verification:** Read references/self-verification.md. Walk the execution ledger for the current mode. Check every step was completed or has a valid skip reason. Report compliance: "Pipeline Compliance: N/M steps completed." If security steps were skipped → BLOCK shipping and run them first. Other gaps → warn and let user decide.
-
-2. **Generate change summary:**
-   - What was done (1-2 sentences)
-   - Files changed (list with one-line descriptions)
-   - Tests: N new, M updated, K guardrail tests
-   - Issues found during audit: N total (fixed and guarded: M, fixed only/cosmetic: K, deferred/circuit breaker: J with descriptions)
-   - Root cause patterns found elsewhere: N (with brief list)
-   - Guardrails added: N (with brief descriptions)
-   - Pipeline compliance: N/M steps (with any gaps listed)
-   - Dependencies added / Migrations created (if any)
-   - Pre-generated conventional commit message
-   - Pre-generated branch name
-
-**HARD STOP. Wait for user:**
-- "ship it" / "push" / "deploy" / "looks good" → Phase 7
-- "change X" / "also do Y" → return to Phase 2
-- "cancel" / "revert" → discard branch
-- "create PR" → Phase 7 with PR
-
-LOG: "[P6.1] Self-verification: N/M steps completed [✅|⚠️]"
-ANNOUNCE: "Ready gate passed. Summary above."
-
-### PHASE 7: SHIP
-1. Git: stage, commit with conventional message, push branch
-2. If "create PR": create PR with structured description:
-   ```
-   ## What
-   [1-2 sentence summary from Phase 6]
-   ## Why
-   [Root cause / motivation]
-   ## Testing
-   [N new tests, M guardrail tests, what they cover]
-   ## Guardrails Added
-   [List of guardrails preventing recurrence]
-   ## Breaking Changes
-   [None / list of breaking changes]
-   ```
-3. Update CHANGELOG if project has one: add entry under `[Unreleased]` using conventional commit type (Added/Fixed/Changed/Security). Auto-generate from the commit message.
-4. If deployment needed: read references/deployment.md for detected platform, deploy. If deploy fails → attempt rollback using platform's rollback command (see deployment.md), capture error, DO NOT retry, present to user
-5. Post-deploy: health check if platform supports it
-
-ANNOUNCE: "Pushed to [branch]. Commit: [hash]."
+**Promote immediately** to Standard or Full if the work expands beyond one file, changes behavior, needs tests, needs a guardrail, or touches a risky domain.
 
 ---
 
-## Full Mode Additions
+## Standard Mode
 
-Identical to Standard with these additions:
+Use this 5-phase pipeline for most real work.
 
-**PHASE 1:** User checkpoint — present the plan, wait for explicit approval before implementing. Critical-risk changes never skip this.
+### Phase 1: Understand
 
-**PHASE 4:** Add Pass 3 — Convergence: re-review ALL changes from passes 1-2. Verify every structural fix has guardrail AND test. If structural issues remain → fix with full loop (max 3 retries). If stuck → escalate to user. Security Deep Dive: read references/deep-audit.md, OWASP Top 10 review, auth/authz flow verification, data handling (encryption, PII, logging), dependency vulnerability assessment. Every security finding gets FULL loop — no exceptions. CONVERGENCE SHORTCUT: If pass 1 AND pass 2 both find zero issues → skip pass 3. Pass 1 results do NOT gate pass 2 thoroughness — correctness and security are independent concerns.
+1. Clarify the request.
+2. Explore only the relevant code, project rules, and installed skills.
+3. Produce a brief implementation plan with acceptance criteria, root-cause hypothesis for bugs, canonical sources of truth, an edge-case matrix, and a test strategy.
+4. If the request is still ambiguous after that, ask one focused question.
 
-**PHASE 5:** Guardrails mandatory for ALL findings including cosmetic. Architectural guardrails encouraged (linter rules, pre-commit hooks). Root cause scan radius expanded.
+### Phase 2: Implement
+
+1. If on `main` or `master`, warn and offer a branch. The user may explicitly override.
+2. For structural, behavioral, and security work with an existing harness, prefer a failing targeted test first.
+3. Make the change according to the plan and existing conventions.
+4. Delegate to relevant installed skills for domain-specific best practices.
+5. Keep scope tight. Note unrelated issues without changing them.
+
+### Phase 3: Verify
+
+1. Run linter, formatter, and type checker if available. Auto-fix up to 3 cycles.
+2. Run existing tests. Fix failures caused by the change. Record unrelated pre-existing failures without claiming to fix them.
+3. Apply Fix-Guard-Test-Verify to the original request.
+4. Audit the full diff for correctness, security, performance, accessibility, and source-of-truth drift. Every real finding gets the loop with proportionality.
+5. Review the edge-case matrix. Every relevant edge case must be closed or explicitly deferred as unresolved risk.
+6. Run the full affected test scope again and confirm the guardrails still exist after all edits.
+
+### Phase 4: Ready Gate
+
+1. Run `scripts/verify-pipeline.sh standard` if shell access exists and show the raw output.
+2. Load `references/self-verification.md` and complete the critical-outcomes check.
+3. If the script and self-check disagree, say so explicitly, investigate, fix if possible, and rerun. The script is authoritative.
+4. Produce a concise summary: what changed, tests added or updated, TDD status, edge cases covered, deferred risks, root-cause scan results, guardrails added, verification result, and the mandatory AI-review limitations line.
+5. If another model is available through the current toolchain, run a structural adversarial review automatically. Otherwise generate the optional copyable cross-model review prompt from `references/self-verification.md`.
+6. Hard stop for user confirmation.
+
+### Phase 5: Ship
+
+1. Stage, commit with a conventional message, and push the branch.
+2. Create a PR if requested.
+3. Update the changelog if the project uses one.
+4. If deployment is requested, load `references/deployment.md`, show the detected platform, environment, and exact command, and wait for explicit approval. Default to preview or staging; production requires an explicit `prod` or `production` instruction.
+
+---
+
+## Full Mode
+
+Full mode is Standard mode plus stricter controls.
+
+- **Before implementing:** present the plan and wait for explicit approval.
+- **During Verify:** load `references/deep-audit.md` and perform the deeper security pass. Add a convergence pass that re-checks every structural and security fix for guardrails and tests. If the main audit found zero additional issues, you may skip the extra convergence pass.
+- **Guardrails:** executable guardrails are mandatory for structural and security findings unless no executable guard is viable and the reason is explicit.
+- **Summary:** always include the human-review recommendation for high-risk domains.
 
 ---
 
 ## Dynamic Skill Delegation
 
-This skill is the orchestrator — it decides WHAT work to do and in WHAT order. Other installed skills provide specialized expertise for HOW to do it.
+This skill decides the workflow. Other installed skills provide domain-specific depth.
 
-**Phase 1 — Discovery:** At startup the agent loads the name and description of ALL installed skills into context. Review this list ONCE. For each skill whose description matches the domain of the current change (e.g. a React skill for React work, a testing skill for test writing, a design skill for UI changes) → note it in the Implementation Brief as a skill to delegate to.
-
-**Phase 2 — Delegation:** When you reach work matching a noted skill's domain → read that skill's SKILL.md and follow its instructions for that portion of the implementation. For example, if the user has a `frontend-design` skill installed and the task involves UI, load and follow that skill's guidance for the CSS/design work.
-
-**Rules:** Always check the installed skills list — never assume what the user has. If none are relevant → proceed with your own best judgment. If multiple are relevant → use each for its respective domain. This skill remains in control of the overall pipeline (phases, testing, auditing). Delegated skills handle domain-specific best practices.
-
-**Fallback:** If the installed skills list is not available in context (some agents don't expose it) → skip delegation entirely and proceed with your own best judgment. Do not error or stall.
+- Scan installed skills during Understand.
+- When the work reaches a matching domain, read that skill and follow it.
+- Keep this skill in control of risk, testing, verification, and disclosure.
 
 ---
 
-## Critical Behaviors
+## Safety Rules
 
-**Follow-ups:** Pipeline shipped → start NEW pipeline. During ready gate → treat as "change X," return to Phase 2. "revert"/"undo" → git revert, done. Each invocation is STATELESS.
+- Never expose secrets in output, code, or commits.
+- Never auto-deploy.
+- Never silently continue past an unresolved verification contradiction.
+- If you cannot find the bug, report what you searched and ask one focused question.
+- In monorepos, scope work, scans, and tests to the affected packages first.
+- In large repos, read only relevant files and use targeted searches for root-cause scans.
+- If tooling is missing, do not abandon the workflow. Write logical tests, list the commands, and note the limitation.
+- If the user says `stop` or `cancel`, revert only the changes from the current run when they can be isolated safely. If isolation is unclear, ask before any destructive cleanup.
+- Project style rules outrank this skill for formatting and local conventions. This skill outranks default agent behavior for process, guardrails, and disclosure.
 
-**Mid-pipeline abort:** If user says "stop", "undo everything", or "cancel" at ANY point mid-pipeline → immediately stop. If changes were made to files: `git checkout -- .` to discard all unstaged changes (or `git stash` if user might want them later). If a branch was created: offer to delete it. Confirm: "All changes reverted. Back to clean state."
-
-**Monorepos:** If workspace root contains `packages/`, `apps/`, `libs/`, `pnpm-workspace.yaml`, or `lerna.json` → treat as monorepo. Phase 1: identify affected package(s) only. Phase 3: run tests ONLY in affected packages (`--filter`, `--scope`, or `cd packages/X && npm test`). Root cause scans: search within the affected package first, then cross-package only if the pattern is in shared code.
-
-**Large codebases (10,000+ files):** List top-level tree (2 levels). Grep for keywords. Read ONLY grep results + direct imports. Cap ~10 files in Phase 1. Root cause scans use grep only — never scan entire codebase file-by-file.
-
-**Project rules conflict:** Read project rules in Phase 1. SDLC provides the PROCESS. Project rules provide the STANDARDS. If conflict: project rules win for style, SDLC wins for process.
-
-**Can't find the bug:** Report what was searched and found. Ask ONE specific question. Do NOT guess or "fix" something that might not be the issue.
-
-**Secrets:** Never include secrets in output or commits. Never add .env to git. Reference by variable name only. Exposed secrets → flag as audit finding with full loop (guard: .gitignore + pre-commit check).
-
----
-
-## Graceful Degradation
-
-- No shell commands → write tests + list commands for user. All phases still happen.
-- No test framework → write tests in logical format. Suggest framework, don't block. Guardrail tests still written.
-- No linter/formatter/typechecker → skip automated gates. Suggest setup, don't insist.
-- No git → skip branching/commits/push. All other phases still happen.
-- Context pressure (many/large files) → if files exceed ~30% of available context, summarize rather than load in full. Prioritize files from user's prompt. Don't load reference files unless full mode.
-
----
-
-## Progress Logging & Self-Verification
-
-**Two types of user-facing output during execution:**
-
-1. **LOG lines** — emitted DURING work. Format: `LOG: [Phase.Step] Description`. Concrete details: file names, counts, findings. Every phase gets at least one LOG. If a step is skipped, LOG why. Keep under 80 chars.
-2. **ANNOUNCE lines** — emitted at END of each phase. One line, 15 words max. Phase-exit summary.
-
-**Self-verification:** At the Ready Gate (Phase 6 for Standard/Full), load references/self-verification.md and check the execution ledger. Quick mode verifies inline (4 items — no file load needed). The agent verifies it actually performed every required step for the chosen mode. Gaps are reported to the user. Missing security checks block shipping.
-
-**Examples:**
-```
-LOG: [P1.1] Parsed intent: bug-fix in SearchPage component
-LOG: [P1.2] Scanned 3 files: SearchPage.jsx, SearchPage.css, test file
-ANNOUNCE: "Bug fix identified. Implementing 2 steps."
-LOG: [P2.1] On branch fix/search-keyboard — safe to commit
-LOG: [P2.2] Step 1/2: Fixed keyboard handler in SearchPage.jsx
-ANNOUNCE: "Implementation complete. Running checks."
-LOG: [P6.1] Self-verification: 22/22 steps completed ✅
-ANNOUNCE: "Ready gate passed. Summary above."
-```
+**Two-layer verification at Ready Gate:** (1) `scripts/verify-pipeline.sh <mode>` — deterministic filesystem checks, output shown RAW. (2) Agent self-assessment via self-verification.md (or inline for Quick). (3) Contradiction protocol — script is authoritative, disagreements stated and resolved. Quick mode runs script if shell available, falls back to inline 4-item check. Missing security outcomes block shipping. See self-verification.md for examples and full checklist.

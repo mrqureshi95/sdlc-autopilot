@@ -6,74 +6,46 @@
 ## What Happens
 
 ### Mode Selection
-- Risk: MEDIUM (bug fix, UI component)
-- User language: no signal
-- **Mode: Standard**
+- Risk: medium.
+- User language: no override.
+- **Mode: Standard**.
 
-### Phase 1: Understand & Plan
-- Grepped for "search" → found `SearchPage.jsx`, `SearchPage.css`
-- Read both files: search input uses `position: absolute; bottom: 20px`
-- Root cause hypothesis: absolute positioning doesn't account for virtual keyboard reducing viewport
+### Phase 1: Understand
+- Read the relevant UI files and identify the layout bug.
+- Root-cause hypothesis: bottom-positioned input does not adapt to viewport shrink when the virtual keyboard appears.
 - Acceptance criteria:
-  1. Search field visible when virtual keyboard is open
-  2. Search field doesn't overlap other content
-  3. Works on iOS and Android
-- Plan: 2 steps — fix CSS positioning, add resize listener
-
-**Announce:** "Bug fix identified. Implementing 2 steps."
+  1. Search field stays visible when the keyboard opens.
+  2. It does not overlap surrounding content.
+  3. The fix still behaves on mobile browsers that expose `visualViewport`.
+- Edge cases captured up front: safe-area inset, resize timing, and fallback when `visualViewport` is unavailable.
 
 ### Phase 2: Implement
-- Created branch: `fix/search-keyboard-overlap`
-- Changed `position: absolute` to `position: sticky; bottom: 0`
-- Added `padding-bottom: env(safe-area-inset-bottom)` for safe area
-- Added `visualViewport` resize handler to scroll input into view
+- Prefer a failing reproducer first if the existing harness can model the viewport behavior.
+- Change the positioning strategy so the input follows the visible viewport instead of the page bottom.
+- Keep the fix localized to the affected surface.
 
-**Announce:** "Implementation complete. Running checks."
+### Phase 3: Verify
+- Run lint and existing tests.
+- Apply Fix-Guard-Test-Verify:
+  - **Fix:** change the layout behavior.
+  - **Root cause scan:** search for the same bottom-input pattern elsewhere and only fix confirmed matches.
+  - **Guard:** add the smallest effective protection, such as shared positioning logic or an invariant around viewport-driven placement.
+  - **Test:** add a regression test that would fail before the fix and an edge-case test for fallback behavior.
+  - **Verify:** rerun the affected tests.
+- Review the full diff for correctness, accessibility, and source-of-truth drift.
 
-### Phase 3: Gate & Test
-- Linter/formatter: clean
-- Existing tests: pass
-- Fix-guard-test-verify loop:
-  - **Fix:** ✓ in place
-  - **Root cause:** Grepped `position: absolute.*bottom` — found same pattern in `ChatInput.css`. Fixed that too.
-  - **Guard:** Added CSS comment: `/* WARNING: Use position:sticky, not absolute, for inputs near viewport bottom — virtual keyboards reduce viewport */`
-  - **Test:** Wrote regression test simulating viewport resize
-  - **Verify:** New test passes
+### Phase 4: Ready Gate
+Show the raw output of `scripts/verify-pipeline.sh standard`, then summarize:
 
-**Announce:** "4 tests pass (2 new, 1 guardrail). Linting clean."
-
-### Phase 4: Audit
-**Pass 1 — Correctness:**
-- All 3 acceptance criteria met ✓
-- No logic errors, no race conditions
-- 0 findings
-
-**Pass 2 — Security & Quality Checklist:**
-- No security issues in CSS changes
-- No injection risks, no auth changes
-- 0 findings
-
-**Announce:** "Audit done. 0 issues."
-
-### Phase 5: Regression & Final Verification
-- Full test suite: all pass
-- Guardrail completeness: CSS comment in place, regression test passes
-- No docs to update
-
-**Announce:** "All 4 tests pass. 1 guardrail verified."
-
-### Phase 6: Ready Gate
-```
-What: Fixed search field being hidden behind virtual keyboard on mobile.
-      Also fixed same pattern in ChatInput.css.
-Files: SearchPage.css (sticky positioning), ChatInput.css (same fix)
-Tests: 2 new (viewport resize regression), 0 updated, 1 guardrail
-Audit: 0 issues
-Root cause: position:absolute pattern found in 1 other location (fixed)
-Guardrails: CSS comment warning against absolute positioning for bottom inputs
-Commit: fix(search): prevent keyboard overlap on mobile search field
-Branch: fix/search-keyboard-overlap
+```text
+What: Fixed the mobile keyboard overlap bug for the search field.
+Tests: regression test for viewport overlap, edge-case coverage for fallback behavior.
+Guardrails: shared bottom-input handling to reduce recurrence.
+Root cause scan: searched for the same pattern in sibling components; fixed only confirmed matches.
+Limitations: AI-assisted review — catches known patterns, not novel vulnerabilities.
 ```
 
-## Token Cost
-~7,300 tokens total skill overhead (SKILL.md + self-verification.md at Ready Gate).
+If another model is available, run an adversarial review there. Otherwise generate the copyable prompt.
+
+### Phase 5: Ship
+Wait for explicit confirmation, then commit and push.
