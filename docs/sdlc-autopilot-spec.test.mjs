@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(resolve(here, "sdlc-autopilot-spec.html"), "utf8");
+const evals = JSON.parse(readFileSync(resolve(here, "../evals/evals.json"), "utf8"));
 
 const requiredTabs = [
   'data-tab="quick"',
@@ -20,6 +21,7 @@ for (const tab of requiredTabs) {
 const requiredSources = [
   "../SKILL.md",
   "../README.md",
+  "../LICENSE.txt",
   "../GUIDANCE.md",
   "../references/self-verification.md",
   "../references/deep-audit.md",
@@ -51,6 +53,8 @@ const requiredCopy = [
   "untracked files",
   "ASVS 5.0.0",
   "NIST SSDF",
+  "Repository visibility: private",
+  "Access And Distribution",
 ];
 
 for (const phrase of requiredCopy) {
@@ -58,6 +62,8 @@ for (const phrase of requiredCopy) {
 }
 
 assert(!/https?:\/\//.test(html), "spec should not depend on external URLs or assets");
+assert(!html.includes("<title id="), "SVG titles create native hover tooltips and should be avoided");
+assert(html.includes(`${evals.evals.length} scenarios`), "documented eval scenario count should match evals/evals.json");
 assert(/addEventListener\("click"/.test(html), "tab click behavior should be wired");
 assert(/addEventListener\("keydown"/.test(html), "keyboard tab behavior should be wired");
 
