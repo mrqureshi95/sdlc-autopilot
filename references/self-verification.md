@@ -6,6 +6,14 @@ This file is the second verification layer. The first is `scripts/verify-pipelin
 
 ---
 
+## Trust Boundary
+
+**Script-enforced:** tracked, staged, and untracked diffs; test-file evidence; detected test execution; coverage artifacts when present; guardrail signals; assertion-count signals; secrets, dangerous patterns, suppression/debug markers; Full-mode security patterns; optional strict inversion.
+
+**Self-reported:** mode rationale, TDD timing, source-of-truth reasoning, root-cause scan scope, edge-case closure, contract safety, unresolved risk, and AI-review limitations. Treat these as review claims that must be reconciled with the script output.
+
+---
+
 ## How To Use This File
 
 Ask one question for each outcome: does the evidence exist right now?

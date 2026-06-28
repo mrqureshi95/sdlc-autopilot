@@ -15,7 +15,7 @@
 # contradicts the agent's self-assessment, this script wins.
 #
 # Checks by mode:
-#   ALL:      changes exist, no secrets, no dangerous patterns,
+#   ALL:      changes exist, including untracked files, no secrets, no dangerous patterns,
 #             no suppression/debug marker surprises
 #   STD+FULL: test files in diff for source changes, tests pass,
 #             coverage evidence when available, executable guardrail signal,
@@ -50,11 +50,13 @@ DIFF_FILE=$(mktemp)
 ADDED_FILE=$(mktemp)
 EXEC_ADDED_FILE=$(mktemp)
 SOURCE_FILE_LIST=$(mktemp)
-trap 'rm -f "$DIFF_FILE" "$ADDED_FILE" "$EXEC_ADDED_FILE" "$SOURCE_FILE_LIST"' EXIT
+UNTRACKED_FILE_LIST=$(mktemp)
+trap 'rm -f "$DIFF_FILE" "$ADDED_FILE" "$EXEC_ADDED_FILE" "$SOURCE_FILE_LIST" "$UNTRACKED_FILE_LIST"' EXIT
 
 # --- Collect diff ---
 HAS_GIT=false
 SOURCE_CHANGES=""
+UNTRACKED_COUNT=0
 if git rev-parse --git-dir >/dev/null 2>&1; then
   HAS_GIT=true
 
@@ -77,6 +79,17 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
     fi
   fi
 
+  # Include brand-new files that have not been staged or added with git add -N.
+  # Ready Gate evidence must not silently ignore files the agent just created.
+  git ls-files --others --exclude-standard > "$UNTRACKED_FILE_LIST" 2>/dev/null || true
+  if [ -s "$UNTRACKED_FILE_LIST" ]; then
+    UNTRACKED_COUNT=$(wc -l < "$UNTRACKED_FILE_LIST" | tr -d ' ')
+    while IFS= read -r path; do
+      [ -f "$path" ] || continue
+      git diff --no-index -- /dev/null "$path" >> "$DIFF_FILE" 2>/dev/null || true
+    done < "$UNTRACKED_FILE_LIST"
+  fi
+
   # Extract added lines (exclude diff headers)
   grep '^+' "$DIFF_FILE" | grep -v '^+++' > "$ADDED_FILE" 2>/dev/null || true
 
@@ -97,7 +110,11 @@ if [ "$HAS_GIT" = false ]; then
   skip "Change detection — no git repository"
 elif [ -s "$DIFF_FILE" ]; then
   COUNT=$(grep -c '^diff --git' "$DIFF_FILE" || true)
-  pass "Changes detected: $COUNT file(s) in diff"
+  if [ "$UNTRACKED_COUNT" -gt 0 ]; then
+    pass "Changes detected: $COUNT file(s) in diff, including $UNTRACKED_COUNT untracked file(s)"
+  else
+    pass "Changes detected: $COUNT file(s) in diff"
+  fi
 else
   fail "No changes detected" "git diff is empty — was code modified?"
 fi

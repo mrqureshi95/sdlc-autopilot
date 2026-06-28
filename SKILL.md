@@ -14,6 +14,16 @@ One rough prompt in. A safer implementation workflow out.
 
 ---
 
+## When Not To Use The Full Workflow
+
+Do not force Standard or Full ceremony onto disposable throwaway work when the user explicitly asks for a prototype, spike, scratch file, or quick experiment that will not be shipped, reused, deployed, or connected to real data.
+
+For those cases, use Quick-style discipline: read the target, make the smallest change, run cheap checks if available, and disclose that no full lifecycle evidence was produced. Still promote immediately if the work touches security, auth, payments, PII, crypto, deployment, DB schema, shared contracts, production code, or anything the user later wants to keep.
+
+This skill is also not needed for explanation-only questions where no code or artifact will be changed.
+
+---
+
 ## AI Review Limits
 
 This workflow includes AI-assisted review. It is NOT a professional security audit, penetration test, or expert human review.
@@ -23,6 +33,16 @@ This workflow includes AI-assisted review. It is NOT a professional security aud
 **AI review cannot reliably catch:** novel attack paths, business-logic flaws, subtle distributed race conditions, cryptographic mistakes, supply-chain issues, or system-level risks outside the loaded context.
 
 **Required language:** never say "security audit passed" or "professionally audited". Always describe the result as "AI-assisted review". For auth, payments, PII, crypto, medical, or legal work, the final summary must include: "HUMAN REVIEW RECOMMENDED: This change touches [domain]."
+
+---
+
+## Trust Model
+
+Treat evidence in two layers.
+
+**Script-enforced evidence:** `scripts/verify-pipeline.sh` checks real filesystem state: tracked, staged, and untracked diffs; test-file evidence; detected test execution; coverage artifacts when present; executable guardrail signals; assertion-count signals; added secrets, dangerous patterns, suppression/debug markers; Full-mode security patterns; and optional strict inversion through `SDLC_STRICT_INVERSION=1`.
+
+**Self-reported evidence:** the agent must still report mode rationale, TDD timing, source-of-truth reasoning, root-cause scan scope, edge-case closure, contract safety, AI-review limitations, and unresolved risk. These are review claims, not proof. If self-reporting conflicts with script output, the script wins and the contradiction must be resolved before shipping.
 
 ---
 

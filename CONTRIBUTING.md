@@ -118,3 +118,5 @@ The repo also supports an artifact-based harness:
 3. Run `python3 scripts/run-agent-evals.py --runs-dir eval-runs`
 
 The harness copies the fixture to a temp workspace, initializes git, applies the patch, runs `verify-pipeline.sh`, and evaluates any `machine_checks` declared in `evals/evals.json`.
+
+For public multi-agent claims, include these optional `meta.json` fields whenever possible: `agent_name`, `agent_version`, `agent_surface`, `run_at`, and `skill_version_ref`. Do not publish pass-rate claims for an agent unless the corresponding run artifacts are reproducible through this harness.

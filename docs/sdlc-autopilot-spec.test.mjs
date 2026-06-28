@@ -25,7 +25,10 @@ const requiredSources = [
   "../references/deep-audit.md",
   "../references/deployment.md",
   "../scripts/verify-pipeline.sh",
+  "../scripts/verify-pipeline.test.mjs",
   "../evals/evals.json",
+  "../evals/agent-run.schema.json",
+  "../evals/empirical-results.md",
   "../SECURITY.md",
   "../CHANGELOG.md",
 ];
@@ -44,6 +47,10 @@ const requiredCopy = [
   "AI-assisted review",
   "Ready Gate",
   "Strict inversion",
+  "Trust Model",
+  "untracked files",
+  "ASVS 5.0.0",
+  "NIST SSDF",
 ];
 
 for (const phrase of requiredCopy) {

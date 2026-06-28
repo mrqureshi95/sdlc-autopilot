@@ -4,9 +4,54 @@ Loaded ONLY in full mode. Security checklists, guardrail patterns with code exam
 
 **Scope and limitations:** This is an AI-assisted review using known vulnerability patterns. It is NOT a professional penetration test, security audit, or expert human review. It can catch KNOWN patterns (OWASP Top 10 signatures, common anti-patterns, obvious misconfigurations, some straightforward concurrency mistakes). It CANNOT catch novel attack vectors, complex business logic flaws, subtle or distributed race conditions, subtle cryptographic errors, or context-dependent vulnerabilities that require full-system understanding. For HIGH-RISK domains (auth, payments, PII, crypto), always recommend expert human review in the change summary.
 
-## 1. Security Deep Dive Checklist
+## 1. Standards Anchors
 
-### OWASP Top 10 — AI Code Review Patterns
+Use these standards as a review map, not as a compliance claim.
+
+- OWASP Application Security Verification Standard (ASVS) 5.0.0: https://owasp.org/www-project-application-security-verification-standard/
+- NIST Secure Software Development Framework (SSDF) SP 800-218 v1.1: https://csrc.nist.gov/pubs/sp/800/218/final
+
+Full-mode security findings should record:
+
+1. **ASVS area:** the closest relevant ASVS 5.0.0 area.
+2. **SSDF group:** PO, PS, PW, or RV.
+3. **Evidence:** changed file, route, function, config, or test that proves the issue was addressed.
+4. **Guardrail:** type, validator, middleware, invariant, static rule, or test that reduces recurrence.
+5. **Residual risk:** anything not covered by AI-assisted review.
+
+Never claim ASVS or SSDF compliance unless a qualified human-led assessment actually happened.
+
+### Fast ASVS / SSDF Mapping
+
+| Review target | ASVS 5.0.0 area | NIST SSDF group |
+|---|---|---|
+| XSS, unsafe HTML, unsafe encoding | V1 Encoding and Sanitization; V3 Web Frontend Security | PW Produce Well-Secured Software |
+| Input validation, business rules, abuse cases | V2 Validation and Business Logic; V15 Secure Coding and Architecture | PW Produce Well-Secured Software |
+| API routes, web services, request/response contracts | V4 API and Web Service | PW Produce Well-Secured Software |
+| Uploads, downloads, path traversal, file type validation | V5 File Handling | PW Produce Well-Secured Software |
+| Login, MFA, credentials, password reset | V6 Authentication | PW Produce Well-Secured Software; PS Protect the Software |
+| Cookies, session expiry, token storage | V7 Session Management | PW Produce Well-Secured Software; PS Protect the Software |
+| Authorization, RBAC, object ownership | V8 Authorization | PW Produce Well-Secured Software |
+| JWTs and other self-contained tokens | V9 Self-contained Tokens | PW Produce Well-Secured Software; PS Protect the Software |
+| OAuth, OIDC, delegated auth | V10 OAuth and OIDC | PW Produce Well-Secured Software |
+| Crypto algorithms, key handling, hashing | V11 Cryptography | PS Protect the Software; PW Produce Well-Secured Software |
+| TLS, service-to-service communication | V12 Secure Communication | PS Protect the Software |
+| Runtime configuration, CORS, headers, debug settings | V13 Configuration | PO Prepare the Organization; PW Produce Well-Secured Software |
+| PII, retention, masking, privacy controls | V14 Data Protection | PS Protect the Software; PW Produce Well-Secured Software |
+| Supply chain, dependencies, provenance | V15 Secure Coding and Architecture | PS Protect the Software; PO Prepare the Organization |
+| Logging, monitoring, error handling, incident clues | V16 Security Logging and Error Handling | RV Respond to Vulnerabilities; PW Produce Well-Secured Software |
+| WebRTC media/data channels | V17 WebRTC | PW Produce Well-Secured Software |
+
+NIST SSDF groups used here:
+
+- **PO Prepare the Organization:** people, process, and technology are ready for secure development.
+- **PS Protect the Software:** protect code, components, and release artifacts from tampering or unauthorized access.
+- **PW Produce Well-Secured Software:** design, implement, test, and release software with fewer vulnerabilities.
+- **RV Respond to Vulnerabilities:** identify, fix, and prevent recurrence of residual vulnerabilities.
+
+## 2. Security Deep Dive Checklist
+
+### ASVS-Mapped AI Code Review Patterns
 
 **A01 Broken Access Control** — Grep: `role|permission|isAdmin|canAccess|authorize|middleware` — Verify every endpoint checks auth AND authz. No direct object refs without ownership. Guard: deny-by-default middleware.
 
@@ -36,7 +81,7 @@ Loaded ONLY in full mode. Security checklists, guardrail patterns with code exam
 ### Data Handling
 PII encrypted at rest, masked in logs. No PII in error messages. GDPR: deletion + export endpoints. Guard: PII markers + log sanitizer.
 
-## 2. Guardrail Pattern Library
+## 3. Guardrail Pattern Library
 
 ### Null/Undefined Protection
 ```typescript
@@ -114,13 +159,13 @@ async function withIdempotency(key: string, fn: () => Promise<void>) {
 // Test: call twice with same key → fn runs once
 ```
 
-## 3. API Contract Validation
+## 4. API Contract Validation
 
 **Find callers:** `grep -rn "functionName\|/api/path" --include="*.ts"` (adapt extension per language)
 **Check each caller:** correct arg types, handles new response shape, handles new errors, compiles if args changed.
 **Guards:** API version header (`X-API-Version`), deprecation header, contract tests (request shape → response shape), old-shape test → graceful error.
 
-## 4. Database Migration Guidance
+## 5. Database Migration Guidance
 
 **Create:** `YYYYMMDDHHMMSS_description.sql` with UP and DOWN. Non-destructive: nullable first, backfill, then constrain.
 **Test:** `migrate up && migrate down && migrate up` — DB unchanged after round-trip.
@@ -136,7 +181,7 @@ test('schema matches snapshot', async () => {
 ```
 **Rollback:** Keep down migration tested. Backup before data migrations. Deprecate columns before removal.
 
-## 5. Convergence Pass 3 Protocol
+## 6. Convergence Pass Protocol
 
 Re-review ALL changes from passes 1-2 for structural completeness.
 

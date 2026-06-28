@@ -65,7 +65,7 @@ ISSUE FOUND
 
 ## What This CAN Prove
 
-- The repo can prove that a patch exists, tests were added or updated, and the verifier scripts were run.
+- The repo can prove that a patch exists, including untracked files, tests were added or updated, and the verifier scripts were run.
 - In strict mode, it can sometimes prove that at least one changed test fails on the base revision and passes now.
 - It can prove that the agent produced specific artifacts and that those artifacts satisfy machine-checkable eval rules.
 
@@ -75,6 +75,20 @@ ISSUE FOUND
 - It cannot prove absence of vulnerabilities.
 - It cannot prove that every edge case in a real system has been found.
 - It cannot replace expert human review for high-risk code.
+
+## Trust Model
+
+SDLC Autopilot separates filesystem evidence from agent self-reporting.
+
+**Script-enforced:** `scripts/verify-pipeline.sh` checks real tracked, staged, and untracked diffs; detects changed tests; runs supported test tools; looks for coverage artifacts when available; scans for hardcoded secrets, dangerous patterns, suppression/debug markers, executable guardrail signals, assertion-count signals, and Full-mode security patterns; and can run the optional strict inversion gate.
+
+**Agent-reported:** mode rationale, TDD timing, root-cause scan completeness, source-of-truth reasoning, contract safety, edge-case closure, unresolved risk, and AI-review limitations still require honest agent reporting. If the script and the agent disagree, the script wins and the contradiction must be resolved or escalated.
+
+## When Not To Use This
+
+Do not spend the full lifecycle on disposable throwaway prototypes, scratch files, or quick spikes that will not be shipped, reused, deployed, connected to real data, or turned into production code. Use a lightweight Quick-style pass instead: make the smallest change, run cheap checks if available, and disclose that no full lifecycle evidence was produced.
+
+Promote immediately to Standard or Full if the work becomes real product code or touches security, auth, payments, PII, crypto, deployment, database schema, shared contracts, or production systems.
 
 ## What This Is NOT
 
@@ -215,7 +229,7 @@ sdlc-autopilot/
 │   ├── verify-pipeline.sh   # External pipeline verification (Ready Gate)
 │   └── run-evals.sh         # Validate fixture structure (dev only)
 ├── evals/
-│   ├── evals.json        # 23 evaluation scenarios (manual verification)
+│   ├── evals.json        # 26 evaluation scenarios (manual verification)
 │   └── fixtures/         # Minimal project fixtures for each test
 ├── examples/
 │   ├── quick-change-walkthrough.md
@@ -242,6 +256,12 @@ This skill works with any agent that supports the Agent Skills specification —
 
 The pipeline degrades gracefully. Even in chat-only mode, you get the structured SDLC process, guardrail generation, and verification flow — you just run the terminal commands yourself.
 
+## Empirical Evaluation Status
+
+The eval system has 26 outcome-focused scenarios, fixture validation, and an artifact harness for agent-run evidence. Current public evidence and the multi-agent reporting protocol live in [evals/empirical-results.md](evals/empirical-results.md).
+
+No cross-agent pass-rate claim should be published unless reproducible run artifacts exist for each named agent. That is intentional: the skill is strongest when it is honest about what has actually been tested.
+
 ---
 
 ## FAQ
@@ -250,7 +270,7 @@ The pipeline degrades gracefully. Even in chat-only mode, you get the structured
 The core skill is intentionally lean. Reference files are loaded only when needed: self-verification.md at the Ready Gate, deep-audit.md in Full mode, and deployment.md only for deploy work. Quick mode stays on the core skill alone. The verification script (`verify-pipeline.sh`) runs externally and doesn't consume context tokens beyond its output.
 
 **How do I know the agent actually followed the pipeline?**
-The skill uses two-layer verification. First, `scripts/verify-pipeline.sh` checks real filesystem state — changes exist, tests pass, coverage evidence is present when the project exposes it, executable guardrail signals exist, changed tests have a meaningful assertion count, and no secrets or dangerous patterns were added. This output is deterministic and shown to you RAW. Second, the agent walks a short critical-outcomes checklist from `self-verification.md`. If the script and self-assessment disagree, the contradiction is stated explicitly and the script wins. Missing security checks, missing guardrails, or missing limitation disclosure block shipping.
+The skill uses two-layer verification. First, `scripts/verify-pipeline.sh` checks real filesystem state — tracked, staged, and untracked changes exist, tests pass, coverage evidence is present when the project exposes it, executable guardrail signals exist, changed tests have a meaningful assertion count, and no secrets or dangerous patterns were added. This output is deterministic and shown to you RAW. Second, the agent walks a short critical-outcomes checklist from `self-verification.md`. If the script and self-assessment disagree, the contradiction is stated explicitly and the script wins. Missing security checks, missing guardrails, or missing limitation disclosure block shipping.
 
 **Can it verify the inversion principle automatically?**
 Partially. The repo now includes `scripts/verify-inversion.sh`, a prototype that runs changed tests on the current worktree and a temporary base worktree to check whether at least one changed test fails on pre-fix code and passes now. It currently supports targeted Jest, Vitest, and pytest runs. It is intentionally marked as a prototype because import/collection failures can still make results inconclusive.

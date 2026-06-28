@@ -636,10 +636,12 @@
         <ul class="nav-list">
           <li><a href="#overview">Overview</a></li>
           <li><a href="#purpose">Purpose</a></li>
+          <li><a href="#fit">When Not To Use</a></li>
           <li><a href="#mode-selection">Mode Selection</a></li>
           <li><a href="#modes">Modes</a></li>
           <li><a href="#core-loop">Core Loop</a></li>
           <li><a href="#verification">Verification</a></li>
+          <li><a href="#trust-model">Trust Model</a></li>
           <li><a href="#references">References</a></li>
           <li><a href="#security">AI Review Limits</a></li>
           <li><a href="#deployment">Deployment</a></li>
@@ -715,7 +717,7 @@
         <div class="grid four">
           <article class="card metric">
             <span>Live skill file</span>
-            <b>183</b>
+            <b>203</b>
             <span>lines in <a href="../SKILL.md">SKILL.md</a></span>
           </article>
           <article class="card metric">
@@ -725,7 +727,7 @@
           </article>
           <article class="card metric">
             <span>Evaluation scenarios</span>
-            <b>23</b>
+            <b>26</b>
             <span>declared in <a href="../evals/evals.json">evals/evals.json</a></span>
           </article>
           <article class="card metric">
@@ -745,6 +747,7 @@
               <li>Preserves single source of truth, contract safety, and smallest safe change.</li>
               <li>Runs an evidence-based Ready Gate before commit, push, PR, or deploy.</li>
               <li>Loads deeper reference files only when the mode or phase requires them.</li>
+              <li>Separates script-enforced evidence from self-reported review claims.</li>
             </ul>
           </article>
           <article class="note red">
@@ -756,7 +759,39 @@
               <li>It does not auto-deploy.</li>
               <li>It does not silently continue when verifier output contradicts self-assessment.</li>
               <li>It does not override local style conventions for formatting.</li>
+              <li>It does not claim cross-agent pass rates without reproducible run artifacts.</li>
             </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="fit">
+        <h2>When Not To Use The Full Workflow</h2>
+        <p class="section-intro">
+          SDLC Autopilot is meant to raise quality for real code, not bury every scratch experiment in lifecycle overhead.
+          The current skill explicitly allows a lightweight path for disposable work while keeping risky domains protected.
+        </p>
+        <div class="grid three">
+          <article class="card">
+            <h3>Use Lightweight Discipline</h3>
+            <p>
+              For throwaway prototypes, spikes, scratch files, or quick experiments that will not be shipped, reused, deployed,
+              connected to real data, or turned into production code, use Quick-style work and state that full lifecycle evidence was not produced.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Promote Immediately</h3>
+            <p>
+              If the work touches production code, real data, security, auth, payments, PII, crypto, deployment, database schema,
+              shared contracts, or something the user wants to keep, promote to Standard or Full.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Skip For Explanations</h3>
+            <p>
+              Explanation-only questions do not need the lifecycle unless code or artifacts will be changed.
+              The skill is a workflow for making changes, not a requirement for every technical conversation.
+            </p>
           </article>
         </div>
       </section>
@@ -1054,7 +1089,8 @@
         <h2>Verification</h2>
         <p class="section-intro">
           The Ready Gate uses two verification layers. The first is deterministic filesystem evidence from <code>scripts/verify-pipeline.sh</code>.
-          The second is the agent's critical-outcomes self-check from <code>references/self-verification.md</code>. If they disagree, the script is authoritative.
+          The verifier now includes tracked, staged, and untracked files so brand-new files are not silently missed. The second layer is the agent's
+          critical-outcomes self-check from <code>references/self-verification.md</code>. If they disagree, the script is authoritative.
         </p>
 
         <figure class="diagram" aria-labelledby="verify-title">
@@ -1093,7 +1129,7 @@
           <article class="card">
             <h3>Verifier Script Checks</h3>
             <ul class="clean">
-              <li>Changes exist.</li>
+              <li>Changes exist, including untracked files the agent just created.</li>
               <li>Standard and Full require test-file evidence when source changes exist.</li>
               <li>Detected tests run when a runner is available.</li>
               <li>Coverage artifacts are checked when coverage tooling exists.</li>
@@ -1118,6 +1154,41 @@
               <li>Script and self-check agree.</li>
               <li>Limitations and human-review guidance are honest.</li>
               <li>Deploy approval is explicit.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="trust-model">
+        <h2>Trust Model</h2>
+        <p class="section-intro">
+          The skill does not treat all evidence equally. Some facts are checked by scripts against the filesystem. Other facts are review claims
+          the agent must report honestly and reconcile against script output.
+        </p>
+        <div class="grid two">
+          <article class="note green">
+            <h3>Script-Enforced Evidence</h3>
+            <ul class="clean">
+              <li>Tracked, staged, and untracked diffs.</li>
+              <li>Changed test-file evidence.</li>
+              <li>Supported test execution.</li>
+              <li>Coverage artifacts when present.</li>
+              <li>Executable guardrail patterns and assertion-count signals.</li>
+              <li>Added secrets, dangerous patterns, suppression markers, and debug markers.</li>
+              <li>Full-mode security pattern signals.</li>
+              <li>Optional strict inversion with <code>SDLC_STRICT_INVERSION=1</code>.</li>
+            </ul>
+          </article>
+          <article class="note red">
+            <h3>Self-Reported Evidence</h3>
+            <ul class="clean">
+              <li>Mode-selection rationale.</li>
+              <li>TDD timing and any blocker.</li>
+              <li>Root-cause scan scope and confirmed matches.</li>
+              <li>Single-source-of-truth and contract-safety reasoning.</li>
+              <li>Edge-case closure and unresolved risk.</li>
+              <li>AI-review limitation language and human-review recommendation.</li>
+              <li>Agreement or contradiction with the raw verifier output.</li>
             </ul>
           </article>
         </div>
@@ -1180,12 +1251,12 @@
               <tr>
                 <td><a href="../references/self-verification.md">references/self-verification.md</a></td>
                 <td>Ready Gate for Standard and Full</td>
-                <td>Ten critical outcomes, contradiction protocol, report format, and cross-model review prompt spec.</td>
+                <td>Trust boundary, ten critical outcomes, contradiction protocol, report format, and cross-model review prompt spec.</td>
               </tr>
               <tr>
                 <td><a href="../references/deep-audit.md">references/deep-audit.md</a></td>
                 <td>Full mode</td>
-                <td>AI-assisted security review patterns, guardrail library, API contract validation, migration guidance, and convergence protocol.</td>
+                <td>ASVS 5.0.0 and NIST SSDF mapping, AI-assisted security review patterns, guardrail library, API contract validation, migration guidance, and convergence protocol.</td>
               </tr>
               <tr>
                 <td><a href="../references/deployment.md">references/deployment.md</a></td>
@@ -1232,6 +1303,10 @@
           <strong>Required language:</strong> the skill forbids claims like <code>security audit passed</code> or <code>professionally audited</code>.
           Summaries should say <code>AI-assisted review</code>. For auth, payments, PII, crypto, medical, or legal work, the final summary must include:
           <code>HUMAN REVIEW RECOMMENDED: This change touches [domain].</code>
+        </div>
+        <div class="note" style="margin-top: 1rem;">
+          <strong>Full-mode standards map:</strong> <code>references/deep-audit.md</code> now asks agents to map high-risk findings to OWASP ASVS 5.0.0 areas
+          and NIST SSDF groups: PO, PS, PW, or RV. This improves review discipline without claiming formal compliance or replacing expert assessment.
         </div>
       </section>
 
@@ -1299,7 +1374,7 @@
         <h2>Evaluation Ecosystem</h2>
         <p class="section-intro">
           The repository includes fixture-based scenarios and partial machine-checking. The eval suite is outcome-focused: it checks whether the agent selects the right mode,
-          adds guardrails, writes meaningful tests, handles risk, and discloses limitations.
+          adds guardrails, writes meaningful tests, handles risk, and discloses limitations. Public pass-rate claims require reproducible run artifacts rather than trust.
         </p>
 
         <figure class="diagram" aria-labelledby="eval-title">
@@ -1309,7 +1384,7 @@
             <rect x="20" y="20" width="960" height="420" rx="8" fill="#fffaf0" stroke="#141414" stroke-width="4"/>
             <rect x="74" y="88" width="190" height="88" rx="8" fill="#fff1c8" stroke="#141414" stroke-width="4"/>
             <text x="169" y="124" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="18" font-weight="900">evals.json</text>
-            <text x="169" y="151" text-anchor="middle" font-family="Menlo, monospace" font-size="12">23 scenarios</text>
+            <text x="169" y="151" text-anchor="middle" font-family="Menlo, monospace" font-size="12">26 scenarios</text>
             <rect x="74" y="250" width="190" height="88" rx="8" fill="#ddecf7" stroke="#141414" stroke-width="4"/>
             <text x="169" y="286" text-anchor="middle" font-family="Avenir Next, sans-serif" font-size="18" font-weight="900">fixtures</text>
             <text x="169" y="313" text-anchor="middle" font-family="Menlo, monospace" font-size="12">sample projects</text>
@@ -1344,6 +1419,14 @@
           <article class="card">
             <h3>Artifact Harness</h3>
             <p><code>scripts/run-agent-evals.py</code> applies <code>patch.diff</code>, runs the verifier, and evaluates optional machine checks.</p>
+          </article>
+          <article class="card">
+            <h3>Empirical Results</h3>
+            <p><code>evals/empirical-results.md</code> records current local evidence and the bar for future named-agent pass-rate claims.</p>
+          </article>
+          <article class="card">
+            <h3>Agent Metadata</h3>
+            <p><code>evals/agent-run.schema.json</code> supports agent name, version, surface, run time, and skill revision for reproducible campaigns.</p>
           </article>
         </div>
       </section>
@@ -1468,11 +1551,11 @@
         </div>
         <div class="source-row">
           <strong><a href="../references/self-verification.md">self-verification.md</a></strong>
-          <span>Ready Gate outcomes, contradiction protocol, Quick inline check, report format, severity rules, and cross-model review prompt spec.</span>
+          <span>Ready Gate trust boundary, outcomes, contradiction protocol, Quick inline check, report format, severity rules, and cross-model review prompt spec.</span>
         </div>
         <div class="source-row">
           <strong><a href="../references/deep-audit.md">deep-audit.md</a></strong>
-          <span>Full-mode AI-assisted security review patterns, guardrail examples, API contract validation, database migration guidance, and convergence protocol.</span>
+          <span>Full-mode ASVS/NIST mapping, AI-assisted security review patterns, guardrail examples, API contract validation, database migration guidance, and convergence protocol.</span>
         </div>
         <div class="source-row">
           <strong><a href="../references/deployment.md">deployment.md</a></strong>
@@ -1480,11 +1563,23 @@
         </div>
         <div class="source-row">
           <strong><a href="../scripts/verify-pipeline.sh">verify-pipeline.sh</a></strong>
-          <span>Evidence-based verifier used at the Ready Gate. It checks diffs, tests, coverage signals, guardrails, secrets, dangerous patterns, suppression markers, and optional inversion.</span>
+          <span>Evidence-based verifier used at the Ready Gate. It checks tracked, staged, and untracked diffs, tests, coverage signals, guardrails, secrets, dangerous patterns, suppression markers, and optional inversion.</span>
+        </div>
+        <div class="source-row">
+          <strong><a href="../scripts/verify-pipeline.test.mjs">verify-pipeline.test.mjs</a></strong>
+          <span>Regression test proving the verifier includes untracked files in change evidence.</span>
         </div>
         <div class="source-row">
           <strong><a href="../evals/evals.json">evals.json</a></strong>
-          <span>Twenty-three scenarios covering mode selection, bug fixes, features, security, deployment, monorepos, contradiction handling, edge-case closure, and expert mode.</span>
+          <span>Twenty-six scenarios covering mode selection, bug fixes, features, security, deployment, monorepos, contradiction handling, edge-case closure, expert mode, standards mapping, trust model, and lightweight prototypes.</span>
+        </div>
+        <div class="source-row">
+          <strong><a href="../evals/agent-run.schema.json">agent-run.schema.json</a></strong>
+          <span>Run artifact schema with optional agent metadata for reproducible multi-agent reporting.</span>
+        </div>
+        <div class="source-row">
+          <strong><a href="../evals/empirical-results.md">empirical-results.md</a></strong>
+          <span>Current local evidence, public claim boundaries, and the evidence bar for future named-agent pass rates.</span>
         </div>
         <div class="source-row">
           <strong><a href="../SECURITY.md">SECURITY.md</a></strong>

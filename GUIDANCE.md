@@ -8,16 +8,6 @@ SDLC Autopilot is an agent skill that forces useful engineering discipline witho
 - Standard mode as a 5-phase workflow.
 - Full mode for high-risk work.
 - Expert mode as an overlay that removes presentation overhead without weakening safeguards.
-# SDLC Autopilot — Guidance
-
-## What It Is
-
-SDLC Autopilot is an agent skill that forces useful engineering discipline without turning every change into ceremony. The live skill is now built around a leaner model:
-
-- Quick mode for truly trivial edits.
-- Standard mode as a 5-phase workflow.
-- Full mode for high-risk work.
-- Expert mode as an overlay that removes presentation overhead without weakening safeguards.
 
 The point is not to make the agent narrate process. The point is to make the agent produce better code: tests that matter, guardrails that reduce recurrence, honest limitations, and a ready gate that surfaces real evidence.
 
@@ -29,12 +19,22 @@ The skill is triggered by its description, which is intentionally broad enough t
 
 Once triggered, the agent should load only what it needs:
 
-- [SKILL.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/SKILL.md) for the main workflow.
-- [references/self-verification.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/self-verification.md) only at the Ready Gate.
-- [references/deep-audit.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/deep-audit.md) only in Full mode.
-- [references/deployment.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/deployment.md) only for deploy work.
+- [SKILL.md](SKILL.md) for the main workflow.
+- [references/self-verification.md](references/self-verification.md) only at the Ready Gate.
+- [references/deep-audit.md](references/deep-audit.md) only in Full mode.
+- [references/deployment.md](references/deployment.md) only for deploy work.
 
 This keeps the workflow useful for large codebases and vibe-coding sessions where instruction bloat can crowd out the actual repo context.
+
+---
+
+## When Not To Use The Full Workflow
+
+The skill should not turn every scratch experiment into a heavyweight lifecycle. If the user explicitly asks for a disposable prototype, spike, scratch file, or quick experiment that will not be shipped, reused, deployed, connected to real data, or turned into production code, use Quick-style discipline and disclose that no full lifecycle evidence was produced.
+
+That exception is narrow. The moment the prototype touches production code, real data, security, auth, payments, PII, crypto, deployment, database schema, shared contracts, or something the user wants to keep, promote to Standard or Full.
+
+Explanation-only questions do not need the lifecycle unless code or artifacts will be changed.
 
 ---
 
@@ -113,7 +113,7 @@ The crucial change is that verification is unified. The agent no longer needs se
 Full mode keeps Standard mode but adds:
 
 - User approval before implementation.
-- Deeper security review via [references/deep-audit.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/deep-audit.md).
+- Deeper security review via [references/deep-audit.md](references/deep-audit.md).
 - A convergence pass on structural and security changes.
 - Stronger executable guardrail expectations.
 
@@ -152,11 +152,11 @@ The current repo uses two verification layers.
 
 ### Layer 1: External Script
 
-[scripts/verify-pipeline.sh](/Users/muhammadqureshi/Projects/sdlc-autopilot/scripts/verify-pipeline.sh) checks repo evidence, not agent narration.
+[scripts/verify-pipeline.sh](scripts/verify-pipeline.sh) checks repo evidence, not agent narration.
 
 For Standard and Full mode it looks for:
 
-- A real diff.
+- A real diff, including untracked files the agent just created.
 - Test-file updates when source changes exist.
 - Passing tests.
 - Coverage evidence when the project exposes coverage artifacts.
@@ -168,11 +168,21 @@ In Full mode it also looks for security-specific guardrail signals.
 
 ### Layer 2: Critical Outcomes
 
-[references/self-verification.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/self-verification.md) is now intentionally short. It focuses on 10 critical outcomes rather than a long ledger. That makes it more likely the agent will use it honestly instead of rubber-stamping a giant checklist.
+[references/self-verification.md](references/self-verification.md) is now intentionally short. It focuses on 10 critical outcomes rather than a long ledger. That makes it more likely the agent will use it honestly instead of rubber-stamping a giant checklist.
 
 ### Contradictions
 
 If the script and self-check disagree, the script wins. The agent must state the contradiction, diagnose it, try to fix it, and rerun verification. Silent disagreement is not allowed.
+
+---
+
+## Trust Model
+
+The skill has a deliberately mixed evidence model.
+
+**Script-enforced evidence** includes tracked, staged, and untracked diffs; test-file evidence; supported test execution; coverage artifacts when available; executable guardrail patterns; assertion-count signals; added secrets, dangerous patterns, and suppression/debug markers; Full-mode security patterns; and optional strict inversion.
+
+**Self-reported evidence** includes mode rationale, TDD timing, root-cause scan quality, source-of-truth reasoning, edge-case closure, contract safety, unresolved risks, and honest limitations language. These are necessary review claims, but they are not proof. When the script and self-report conflict, the script is authoritative.
 
 ---
 
@@ -231,7 +241,7 @@ The skill should never pretend evidence exists when tooling is absent. It should
 
 The evaluation suite is now outcome-focused.
 
-[evals/evals.json](/Users/muhammadqureshi/Projects/sdlc-autopilot/evals/evals.json) should answer questions like:
+[evals/evals.json](evals/evals.json) should answer questions like:
 
 - Did the bug actually get fixed?
 - Was there a guardrail?
@@ -249,11 +259,11 @@ That shift is important if the skill is supposed to stay valuable to people usin
 
 ## Repo Map
 
-- [SKILL.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/SKILL.md): live workflow.
-- [references/self-verification.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/self-verification.md): critical outcomes.
-- [references/deep-audit.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/deep-audit.md): deep security review prompts and patterns.
-- [references/deployment.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/references/deployment.md): deploy gating.
-- [scripts/verify-pipeline.sh](/Users/muhammadqureshi/Projects/sdlc-autopilot/scripts/verify-pipeline.sh): external evidence checks.
-- [scripts/run-agent-evals.py](/Users/muhammadqureshi/Projects/sdlc-autopilot/scripts/run-agent-evals.py): artifact-based eval harness.
-- [evals/evals.json](/Users/muhammadqureshi/Projects/sdlc-autopilot/evals/evals.json): manual scenarios and optional machine checks.
-- [examples/quick-change-walkthrough.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/examples/quick-change-walkthrough.md), [examples/bug-fix-walkthrough.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/examples/bug-fix-walkthrough.md), [examples/feature-walkthrough.md](/Users/muhammadqureshi/Projects/sdlc-autopilot/examples/feature-walkthrough.md): aligned walkthroughs.
+- [SKILL.md](SKILL.md): live workflow.
+- [references/self-verification.md](references/self-verification.md): critical outcomes.
+- [references/deep-audit.md](references/deep-audit.md): deep security review prompts and patterns.
+- [references/deployment.md](references/deployment.md): deploy gating.
+- [scripts/verify-pipeline.sh](scripts/verify-pipeline.sh): external evidence checks.
+- [scripts/run-agent-evals.py](scripts/run-agent-evals.py): artifact-based eval harness.
+- [evals/evals.json](evals/evals.json): manual scenarios and optional machine checks.
+- [examples/quick-change-walkthrough.md](examples/quick-change-walkthrough.md), [examples/bug-fix-walkthrough.md](examples/bug-fix-walkthrough.md), [examples/feature-walkthrough.md](examples/feature-walkthrough.md): aligned walkthroughs.
