@@ -35,6 +35,13 @@ case "$MODE" in
   *) printf "Usage: %s <quick|standard|full>\n" "$0" >&2; exit 2 ;;
 esac
 
+SCRIPT_DIR=$(dirname "$0")
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" 2>/dev/null && pwd || printf '.')
+INVERSION_SCRIPT="$SCRIPT_DIR/verify-inversion.sh"
+if [ ! -f "$INVERSION_SCRIPT" ] && [ -f "scripts/verify-inversion.sh" ]; then
+  INVERSION_SCRIPT="scripts/verify-inversion.sh"
+fi
+
 # --- Counters ---
 PASS=0
 FAIL=0
@@ -236,7 +243,7 @@ if [ "$MODE" != "quick" ]; then
     skip "Guardrail signal — no added lines"
   else
     EXEC_GC=$(grep -ciE \
-      'assert[A-Za-z_]*\(|invariant\(|validate[A-Za-z_]*\(|sanitize[A-Za-z_]*\(|safeParse\(|schema|zod|joi|yup|throw new (Error|TypeError|RangeError)|instanceof[[:space:]]|typeof[[:space:]]|return[[:space:]]+res\.status\((400|401|403|409|422)\)|expect\(.*\)\.(toThrow|toEqual|toBe|toMatch)' \
+      'assert[A-Za-z_]*\(|assert\.[A-Za-z_][A-Za-z0-9_]*\(|invariant\(|validate[A-Za-z_]*\(|sanitize[A-Za-z_]*\(|safeParse\(|schema|zod|joi|yup|throw new (Error|TypeError|RangeError)|instanceof[[:space:]]|typeof[[:space:]]|return[[:space:]]+res\.status\((400|401|403|409|422)\)|expect\(.*\)\.(toThrow|toEqual|toBe|toMatch)' \
       "$EXEC_ADDED_FILE" || true)
     COMMENT_GC=$(grep -ciE 'GUARD:|INVARIANT:|guardrail|guard against|prevent recurrence' "$ADDED_FILE" || true)
     if [ "$EXEC_GC" -gt 0 ]; then
@@ -324,7 +331,7 @@ if [ "$MODE" != "quick" ]; then
       LOW_ASSERT_FILES=0
       for f in $TQ_FILES; do
         if [ -f "$f" ]; then
-          C=$(grep -Eoc 'expect\(|assert[A-Za-z_]*\(|pytest\.raises|raises\(|should\.' "$f" || true)
+          C=$(grep -Eoc 'expect\(|assert[A-Za-z_]*\(|assert\.[A-Za-z_][A-Za-z0-9_]*\(|pytest\.raises|raises\(|should\.' "$f" || true)
           FILE_COUNT=$((FILE_COUNT + 1))
           TOTAL_ASSERTS=$((TOTAL_ASSERTS + C))
           if [ "$C" -lt 2 ]; then
@@ -377,18 +384,24 @@ fi
 if [ "$MODE" != "quick" ]; then
   if [ "${SDLC_STRICT_INVERSION:-0}" != "1" ]; then
     skip "Strict inversion verification — disabled (set SDLC_STRICT_INVERSION=1)"
-  elif [ ! -x "scripts/verify-inversion.sh" ] && [ ! -f "scripts/verify-inversion.sh" ]; then
-    skip "Strict inversion verification — scripts/verify-inversion.sh not found"
+  elif [ ! -f "$INVERSION_SCRIPT" ]; then
+    skip "Strict inversion verification — verify-inversion.sh not found"
   else
     INVERSION_OUT=""
     if [ -n "${SDLC_INVERSION_BASE_REF:-}" ]; then
-      INVERSION_OUT=$(sh scripts/verify-inversion.sh --base-ref "$SDLC_INVERSION_BASE_REF" 2>&1) && INVERSION_RC=0 || INVERSION_RC=$?
+      INVERSION_OUT=$(sh "$INVERSION_SCRIPT" --base-ref "$SDLC_INVERSION_BASE_REF" 2>&1) && INVERSION_RC=0 || INVERSION_RC=$?
     else
-      INVERSION_OUT=$(sh scripts/verify-inversion.sh 2>&1) && INVERSION_RC=0 || INVERSION_RC=$?
+      INVERSION_OUT=$(sh "$INVERSION_SCRIPT" 2>&1) && INVERSION_RC=0 || INVERSION_RC=$?
     fi
 
     if [ "$INVERSION_RC" -eq 0 ]; then
-      pass "Strict inversion verification passed"
+      if printf '%s\n' "$INVERSION_OUT" | grep -q '^\[SKIP\]'; then
+        INVERSION_SKIP_REASON=$(printf '%s\n' "$INVERSION_OUT" | sed -n 's/^\[SKIP\][[:space:]]*//p' | head -1)
+        [ -z "$INVERSION_SKIP_REASON" ] && INVERSION_SKIP_REASON="no executable inversion evidence"
+        skip "Strict inversion verification skipped — $INVERSION_SKIP_REASON"
+      else
+        pass "Strict inversion verification passed"
+      fi
     else
       fail "Strict inversion verification failed" "$INVERSION_OUT"
     fi

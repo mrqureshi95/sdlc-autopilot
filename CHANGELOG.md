@@ -17,6 +17,8 @@
 - Full-mode deep audit guidance now maps high-risk review work to OWASP ASVS 5.0.0 areas and NIST SSDF practice groups without claiming formal compliance.
 - Installation guidance now requires the complete `sdlc-autopilot/` skill package instead of a `SKILL.md`-only copy.
 - The installable skill now lives under `skills/sdlc-autopilot/` so GitHub installs copy `SKILL.md`, `references/`, and runtime `scripts/` as one package.
+- The external verifier now counts Node `assert.equal(...)` / `assert.deepEqual(...)`-style test assertions as guardrail and assertion-count evidence.
+- Strict inversion verification now resolves the bundled `verify-inversion.sh` from the installed skill package and reports unsupported runner results as skipped rather than passed.
 - The release package no longer includes the obsolete `SKILL-rewrite-proposal.md` draft.
 - The browser specification now reflects the public release path and derives its `SKILL.md` line-count check from the live file.
 
@@ -27,6 +29,7 @@
 - Updated walkthroughs aligned with the current workflow in [examples/quick-change-walkthrough.md](examples/quick-change-walkthrough.md), [examples/bug-fix-walkthrough.md](examples/bug-fix-walkthrough.md), and [examples/feature-walkthrough.md](examples/feature-walkthrough.md).
 - Trust-model and non-use guidance in the live skill and public documentation.
 - Regression test for verifier handling of brand-new untracked files in [scripts/verify-pipeline.test.mjs](scripts/verify-pipeline.test.mjs).
+- Regression tests for Node `assert.*(...)` assertion counting, installed-skill strict inversion path resolution, and honest strict inversion skip reporting in [scripts/verify-pipeline.test.mjs](scripts/verify-pipeline.test.mjs).
 - Regression test for complete skill-package installation guidance and bundled resource references in [scripts/skill-package.test.mjs](scripts/skill-package.test.mjs).
 - Honest empirical evidence page and multi-agent reporting rules in [evals/empirical-results.md](evals/empirical-results.md).
 - Optional agent metadata fields in [evals/agent-run.schema.json](evals/agent-run.schema.json) for reproducible multi-agent eval campaigns.
