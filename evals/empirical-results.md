@@ -15,7 +15,7 @@ As of 2026-06-28, this repository does not claim cross-agent pass rates. It prov
 
 | Date | Evidence | Command | Result |
 |---|---|---|---|
-| 2026-06-28 | HTML spec validation and verifier regression | `node --test scripts/verify-pipeline.test.mjs docs/sdlc-autopilot-spec.test.mjs` | Passing: 2 tests |
+| 2026-06-28 | HTML spec, verifier, and package regression | `node --test scripts/verify-pipeline.test.mjs docs/sdlc-autopilot-spec.test.mjs scripts/skill-package.test.mjs` | Passing: 3 tests |
 | 2026-06-28 | Eval fixture and schema structure | `sh scripts/run-evals.sh` | Passing: 178 checks, 0 failures, 3 expected fixture warnings |
 | 2026-06-28 | Full-mode Ready Gate verifier | `sh scripts/verify-pipeline.sh full` | Passing: 8/11 checks, 3 skipped for unavailable root runner, coverage artifact, and strict inversion |
 | 2026-06-28 | Diff whitespace | `git diff --check` | Passing |

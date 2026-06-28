@@ -18,6 +18,7 @@
 #   ALL:      changes exist, including untracked files, no secrets, no dangerous patterns,
 #             no suppression/debug marker surprises
 #   STD+FULL: test files in diff for source changes, tests pass,
+#             changed Node test files run with node --test when no package runner exists,
 #             coverage evidence when available, executable guardrail signal,
 #             assertion-count signal in changed tests
 #   FULL:     security-specific guardrail evidence
@@ -155,6 +156,21 @@ if [ "$MODE" != "quick" ]; then
     TEST_OUT=$(cargo test 2>&1) && TEST_RC=0 || TEST_RC=$?
   elif [ -f "package.json" ] && grep -q '"test"' package.json 2>/dev/null; then
     TEST_OUT=$(npm test 2>&1) && TEST_RC=0 || TEST_RC=$?
+  elif command -v node >/dev/null 2>&1 && [ -s "$DIFF_FILE" ]; then
+    NODE_TEST_FILES=$(grep '^diff --git' "$DIFF_FILE" \
+      | awk '{print $NF}' \
+      | sed 's|^b/||' \
+      | grep -iE '(__tests__/.*\.(test|spec)\.m?js$|/tests/.*\.(test|spec)\.m?js$|\.(test|spec)\.m?js$|_test\.m?js$|test_.*\.m?js$)' || true)
+
+    if [ -n "$NODE_TEST_FILES" ]; then
+      set --
+      for f in $NODE_TEST_FILES; do
+        [ -f "$f" ] && set -- "$@" "$f"
+      done
+      if [ "$#" -gt 0 ]; then
+        TEST_OUT=$(node --test "$@" 2>&1) && TEST_RC=0 || TEST_RC=$?
+      fi
+    fi
   fi
 
   if [ "$TEST_RC" -eq 999 ]; then

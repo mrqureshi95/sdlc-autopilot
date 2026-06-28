@@ -20,5 +20,9 @@ Thumbs.db
 dist/
 build/
 
+# Python artifacts
+__pycache__/
+*.pyc
+
 # SQLite databases (from fixtures)
 *.db

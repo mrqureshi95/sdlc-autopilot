@@ -11,9 +11,12 @@
 - Expert mode is now explicit: it removes presentation overhead without weakening TDD bias, guardrails, edge-case closure, SSOT, DRY-with-judgment, or verification.
 - The self-verification reference was reduced to 10 critical outcomes and now states the Ready Gate trust boundary.
 - The external verifier was hardened with untracked-file detection, coverage-artifact checks when available, executable guardrail signals, stronger assertion-count checks in changed tests, and the existing safety scans.
+- The external verifier now runs changed Node `.test.mjs` / `.test.js` files with `node --test` when a project has no package-level test runner.
+- CI validation now runs the package/spec/verifier Node tests, all release shell script syntax checks, and Python syntax checks for the agent eval harness.
 - Eval language and walkthroughs were rewritten to focus on outcomes instead of process theater.
 - Full-mode deep audit guidance now maps high-risk review work to OWASP ASVS 5.0.0 areas and NIST SSDF practice groups without claiming formal compliance.
 - Installation guidance now requires the complete `sdlc-autopilot/` skill package instead of a `SKILL.md`-only copy.
+- The release package no longer includes the obsolete `SKILL-rewrite-proposal.md` draft.
 
 ### Added
 - Outcome-focused machine-check support in [scripts/run-agent-evals.py](scripts/run-agent-evals.py): `diff_not_contains`, `verify_output_contains`, `transcript_not_contains`, and `file_contains`.

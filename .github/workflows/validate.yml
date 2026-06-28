@@ -3,12 +3,28 @@ name: Validate Evals
 on:
   push:
     paths:
+      - 'SKILL.md'
+      - 'README.md'
+      - 'GUIDANCE.md'
+      - 'SECURITY.md'
+      - 'CHANGELOG.md'
+      - 'references/**'
       - 'evals/**'
       - 'scripts/**'
+      - 'docs/**'
+      - '.github/workflows/validate.yml'
   pull_request:
     paths:
+      - 'SKILL.md'
+      - 'README.md'
+      - 'GUIDANCE.md'
+      - 'SECURITY.md'
+      - 'CHANGELOG.md'
+      - 'references/**'
       - 'evals/**'
       - 'scripts/**'
+      - 'docs/**'
+      - '.github/workflows/validate.yml'
 
 jobs:
   validate:
@@ -19,11 +35,19 @@ jobs:
       - name: Validate eval fixtures
         run: sh scripts/run-evals.sh
 
+      - name: Validate release package and docs
+        run: node --test scripts/verify-pipeline.test.mjs docs/sdlc-autopilot-spec.test.mjs scripts/skill-package.test.mjs
+
       - name: Check shell script syntax
         run: |
           sh -n scripts/detect-toolchain.sh
           sh -n scripts/run-gates.sh
           sh -n scripts/run-evals.sh
+          sh -n scripts/verify-pipeline.sh
+          sh -n scripts/verify-inversion.sh
+
+      - name: Check Python syntax
+        run: python3 -m py_compile scripts/run-agent-evals.py
 
       - name: Check SKILL.md line count
         run: |

@@ -10,6 +10,8 @@ const read = (path) => readFileSync(resolve(root, path), "utf8");
 const skill = read("SKILL.md");
 const readme = read("README.md");
 const spec = read("docs/sdlc-autopilot-spec.html");
+const workflow = read(".github/workflows/validate.yml");
+const gitignore = read(".gitignore");
 
 const bundledPathMatches = [
   ...skill.matchAll(/`((?:references|scripts)\/[A-Za-z0-9._/-]+)/g),
@@ -56,5 +58,26 @@ assert(
   skill.includes("Install this as the complete `sdlc-autopilot/` skill package"),
   "SKILL.md should state the complete-package install requirement",
 );
+
+const forbiddenReleaseFiles = ["SKILL-rewrite-proposal.md"];
+
+for (const path of forbiddenReleaseFiles) {
+  assert(!existsSync(resolve(root, path)), `release package should not include stale internal file: ${path}`);
+}
+
+const requiredCiCommands = [
+  "node --test scripts/verify-pipeline.test.mjs docs/sdlc-autopilot-spec.test.mjs scripts/skill-package.test.mjs",
+  "sh -n scripts/verify-pipeline.sh",
+  "sh -n scripts/verify-inversion.sh",
+  "python3 -m py_compile scripts/run-agent-evals.py",
+];
+
+for (const command of requiredCiCommands) {
+  assert(workflow.includes(command), `CI should run release guard: ${command}`);
+}
+
+for (const pattern of ["__pycache__/", "*.pyc"]) {
+  assert(gitignore.includes(pattern), `.gitignore should exclude Python bytecode pattern: ${pattern}`);
+}
 
 process.stdout.write("skill package validation passed\n");
