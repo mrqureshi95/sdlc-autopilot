@@ -3,24 +3,22 @@ name: Validate Evals
 on:
   push:
     paths:
-      - 'SKILL.md'
       - 'README.md'
       - 'GUIDANCE.md'
       - 'SECURITY.md'
       - 'CHANGELOG.md'
-      - 'references/**'
+      - 'skills/**'
       - 'evals/**'
       - 'scripts/**'
       - 'docs/**'
       - '.github/workflows/validate.yml'
   pull_request:
     paths:
-      - 'SKILL.md'
       - 'README.md'
       - 'GUIDANCE.md'
       - 'SECURITY.md'
       - 'CHANGELOG.md'
-      - 'references/**'
+      - 'skills/**'
       - 'evals/**'
       - 'scripts/**'
       - 'docs/**'
@@ -40,18 +38,18 @@ jobs:
 
       - name: Check shell script syntax
         run: |
-          sh -n scripts/detect-toolchain.sh
-          sh -n scripts/run-gates.sh
           sh -n scripts/run-evals.sh
-          sh -n scripts/verify-pipeline.sh
-          sh -n scripts/verify-inversion.sh
+          sh -n skills/sdlc-autopilot/scripts/detect-toolchain.sh
+          sh -n skills/sdlc-autopilot/scripts/run-gates.sh
+          sh -n skills/sdlc-autopilot/scripts/verify-pipeline.sh
+          sh -n skills/sdlc-autopilot/scripts/verify-inversion.sh
 
       - name: Check Python syntax
         run: python3 -m py_compile scripts/run-agent-evals.py
 
       - name: Check SKILL.md line count
         run: |
-          lines=$(wc -l < SKILL.md)
+          lines=$(wc -l < skills/sdlc-autopilot/SKILL.md)
           if [ "$lines" -gt 320 ]; then
             echo "SKILL.md is $lines lines (limit: 320)"
             exit 1

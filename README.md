@@ -3,7 +3,7 @@
 **Structured SDLC discipline for AI coding agents.** One messy prompt in → a stricter implementation workflow with testing, guardrails, review, and explicit limits.
 
 ```bash
-npx skills add mrqureshi95/sdlc-autopilot
+npx skills add mrqureshi95/sdlc-autopilot --skill sdlc-autopilot
 ```
 
 Works with **Claude Code · GitHub Copilot · Cursor · Windsurf · Codex · Cline · Roo · Amp** and [30+ other agents](https://skills.sh).
@@ -108,7 +108,7 @@ This repository includes intentionally vulnerable example code under `evals/fixt
 
 - Do not deploy anything from `evals/fixtures/`.
 - Expect repository-wide code scanners to flag those fixtures unless they are scoped or excluded appropriately.
-- When reviewing the security posture of the skill itself, evaluate the root skill/docs/scripts separately from the intentionally insecure fixtures.
+- When reviewing the security posture of the skill itself, evaluate `skills/sdlc-autopilot/`, docs, and repository scripts separately from the intentionally insecure fixtures.
 
 ## Before / After
 
@@ -125,23 +125,23 @@ This repository includes intentionally vulnerable example code under `evals/fixt
 
 ## Installation
 
-SDLC Autopilot is a **multi-file skill package**. `SKILL.md` is the entry point, but it intentionally loads bundled files from `references/` and runs scripts from `scripts/` when the workflow reaches those stages. Do not install or copy `SKILL.md` by itself.
+SDLC Autopilot is a **multi-file skill package**. The installable package lives at `skills/sdlc-autopilot/`. `SKILL.md` is the entry point, but it intentionally loads bundled files from `references/` and runs scripts from `scripts/` when the workflow reaches those stages. Do not install or copy `SKILL.md` by itself.
 
 ### All Agents (Recommended)
 ```bash
-npx skills add mrqureshi95/sdlc-autopilot
+npx skills add mrqureshi95/sdlc-autopilot --skill sdlc-autopilot
 ```
 
-This works with Claude Code, Cursor, GitHub Copilot, Windsurf, Codex, Cline, Roo, OpenCode, Amp, and 30+ other agents. The CLI auto-detects your installed agents. A correct install places the whole `sdlc-autopilot/` package in the agent's skills directory.
+This works with Claude Code, Cursor, GitHub Copilot, Windsurf, Codex, Cline, Roo, OpenCode, Amp, and 30+ other agents. The CLI auto-detects your installed agents. A correct install places the whole `sdlc-autopilot/` package in the agent's skills directory. The repository currently contains one installable skill, so the command without `--skill` also works; the selector is included to keep the package boundary explicit.
 
 ### Install globally (available across all projects)
 ```bash
-npx skills add mrqureshi95/sdlc-autopilot -g
+npx skills add mrqureshi95/sdlc-autopilot --skill sdlc-autopilot -g
 ```
 
 ### Install to specific agents
 ```bash
-npx skills add mrqureshi95/sdlc-autopilot -a claude-code -a cursor -a github-copilot
+npx skills add mrqureshi95/sdlc-autopilot --skill sdlc-autopilot -a claude-code -a cursor -a github-copilot
 ```
 
 ### Required installed files
@@ -155,14 +155,17 @@ sdlc-autopilot/
 │   ├── deep-audit.md
 │   └── deployment.md
 └── scripts/
+    ├── detect-toolchain.sh
+    ├── run-gates.sh
     ├── verify-pipeline.sh
     └── verify-inversion.sh
 ```
 
 The repository includes additional docs, examples, evals, and helper scripts. They are useful for development and review, but the files above are the minimum runtime package for the workflow described in `SKILL.md`.
+The runtime script paths are `scripts/detect-toolchain.sh`, `scripts/run-gates.sh`, `scripts/verify-pipeline.sh`, and `scripts/verify-inversion.sh` inside the installed `sdlc-autopilot/` folder.
 
 ### Manual Installation
-If you prefer not to use the CLI, copy the entire `sdlc-autopilot/` skill folder into your agent's skills directory. Do not copy `SKILL.md` by itself.
+If you prefer not to use the CLI, copy the entire `skills/sdlc-autopilot/` skill folder into your agent's skills directory. Do not copy `SKILL.md` by itself.
 
 - **Claude Code:** `.claude/skills/sdlc-autopilot/`
 - **GitHub Copilot:** `.agents/skills/sdlc-autopilot/`
@@ -237,18 +240,21 @@ Total pipeline cost depends on your codebase size and number of files read.
 
 ```
 sdlc-autopilot/
-├── SKILL.md              # Lean core pipeline
+├── skills/
+│   └── sdlc-autopilot/
+│       ├── SKILL.md              # Lean core pipeline
+│       ├── references/
+│       │   ├── deep-audit.md     # Security checklist + guardrail patterns (full mode only)
+│       │   ├── deployment.md     # All deploy targets in one file (deploy phase only)
+│       │   └── self-verification.md  # Critical-outcomes checklist (ready gate)
+│       └── scripts/
+│           ├── detect-toolchain.sh  # Auto-detect project tools (optional)
+│           ├── run-gates.sh         # Lint + typecheck + test runner (optional)
+│           ├── verify-inversion.sh  # Prototype execution-based inversion verifier
+│           └── verify-pipeline.sh   # External pipeline verification (Ready Gate)
 ├── GUIDANCE.md           # Companion doc with diagrams and explanations
-├── references/
-│   ├── deep-audit.md     # Security checklist + guardrail patterns (full mode only)
-│   ├── deployment.md     # All deploy targets in one file (deploy phase only)
-│   └── self-verification.md  # Critical-outcomes checklist (ready gate)
 ├── scripts/
-│   ├── detect-toolchain.sh  # Auto-detect project tools (optional)
-│   ├── run-gates.sh         # Lint + typecheck + test runner (optional)
 │   ├── run-agent-evals.py   # Machine-checkable harness for agent run artifacts
-│   ├── verify-inversion.sh  # Prototype execution-based inversion verifier
-│   ├── verify-pipeline.sh   # External pipeline verification (Ready Gate)
 │   ├── skill-package.test.mjs # Regression test for complete package/install guidance
 │   └── run-evals.sh         # Validate fixture structure (dev only)
 ├── evals/
@@ -296,7 +302,7 @@ The core skill is intentionally lean. Reference files are loaded only when neede
 The skill uses two-layer verification. First, `scripts/verify-pipeline.sh` checks real filesystem state — tracked, staged, and untracked changes exist, tests pass, coverage evidence is present when the project exposes it, executable guardrail signals exist, changed tests have a meaningful assertion count, and no secrets or dangerous patterns were added. This output is deterministic and shown to you RAW. Second, the agent walks a short critical-outcomes checklist from `self-verification.md`. If the script and self-assessment disagree, the contradiction is stated explicitly and the script wins. Missing security checks, missing guardrails, or missing limitation disclosure block shipping.
 
 **Can it verify the inversion principle automatically?**
-Partially. The repo now includes `scripts/verify-inversion.sh`, a prototype that runs changed tests on the current worktree and a temporary base worktree to check whether at least one changed test fails on pre-fix code and passes now. It currently supports targeted Jest, Vitest, and pytest runs. It is intentionally marked as a prototype because import/collection failures can still make results inconclusive.
+Partially. The skill package includes `scripts/verify-inversion.sh`, a prototype that runs changed tests on the current worktree and a temporary base worktree to check whether at least one changed test fails on pre-fix code and passes now. It currently supports targeted Jest, Vitest, and pytest runs. It is intentionally marked as a prototype because import/collection failures can still make results inconclusive.
 
 If you want the main verifier to enforce this stricter gate, run `verify-pipeline.sh` with `SDLC_STRICT_INVERSION=1`. You can also set `SDLC_INVERSION_BASE_REF=<git-ref>` to override the base revision used by the prototype.
 
@@ -307,7 +313,7 @@ This is the contradiction protocol. The agent must state the mismatch (e.g., "Sc
 Any. The pipeline is language-agnostic. The scripts auto-detect toolchains for JS/TS, Python, Go, Rust, Ruby, and Java. For others, the pipeline still works — it just skips automated gates.
 
 **Can I customize the AI-assisted review?**
-Yes. Edit `references/deep-audit.md` to add security patterns, guardrail templates, or domain-specific checks. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Yes. Edit `skills/sdlc-autopilot/references/deep-audit.md` to add security patterns, guardrail templates, or domain-specific checks. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 **Is the AI review as good as a human security audit?**
 No — and the skill is honest about this. Every change summary includes a limitations disclosure. AI review catches known patterns (SQL injection, XSS, missing auth checks, hardcoded secrets) but cannot catch novel attack vectors, business logic flaws, or complex cryptographic errors. For high-risk code (auth, payments, PII), the pipeline adds a "⚠️ HUMAN REVIEW RECOMMENDED" notice. Think of it as a thorough first pass that catches the common 80%, not a replacement for expert review on the critical 20%.

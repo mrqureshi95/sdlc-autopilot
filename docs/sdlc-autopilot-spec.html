@@ -725,7 +725,7 @@
           <article class="card metric">
             <span>Live skill file</span>
             <b>205</b>
-            <span>lines in <a href="../SKILL.md">SKILL.md</a></span>
+            <span>lines in <a href="../skills/sdlc-autopilot/SKILL.md">SKILL.md</a></span>
           </article>
           <article class="card metric">
             <span>Current standard pipeline</span>
@@ -776,14 +776,14 @@
         <h2>Access And Distribution</h2>
         <p class="section-intro">
           This specification describes the current skill package in this repository. The public release path is the complete
-          <code>mrqureshi95/sdlc-autopilot</code> skill package, installable through the skills CLI when the repository is available to the installer.
+          <code>skills/sdlc-autopilot/</code> package inside <code>mrqureshi95/sdlc-autopilot</code>, installable through the skills CLI when the repository is available to the installer.
           Anyone who receives an installed copy can inspect those local files because skills are file-based instructions and scripts.
           The installed copy must include the whole skill package, not only <code>SKILL.md</code>.
         </p>
         <div class="grid three">
           <article class="card">
             <h3>Public Release</h3>
-            <p><span class="badge">skills.sh</span> Use <code>npx skills add mrqureshi95/sdlc-autopilot</code> when installing from the published repository.</p>
+            <p><span class="badge">skills.sh</span> Use <code>npx skills add mrqureshi95/sdlc-autopilot --skill sdlc-autopilot</code> when installing from the published repository.</p>
           </article>
           <article class="card">
             <h3>Installed Copies</h3>
@@ -935,7 +935,7 @@
       <section id="modes">
         <h2>Mode Specifications</h2>
         <p class="section-intro">
-          These tabs document the current behavior in <a href="../SKILL.md">SKILL.md</a>. Standard and Full treat engineering standards as non-negotiable.
+          These tabs document the current behavior in <a href="../skills/sdlc-autopilot/SKILL.md">SKILL.md</a>. Standard and Full treat engineering standards as non-negotiable.
           Quick applies them proportionally and promotes when the work is no longer trivial.
         </p>
 
@@ -1252,7 +1252,7 @@
         <p class="section-intro">
           The skill intentionally keeps <code>SKILL.md</code> lean. Additional references are loaded only when the workflow needs them.
           This is part of the skill's token policy and keeps large codebase work from drowning in process text. These are local bundled resources,
-          not remote files, so they must be installed in the same <code>sdlc-autopilot/</code> skill folder.
+          not remote files, so they must be shipped from the same <code>skills/sdlc-autopilot/</code> folder and installed into one skill folder.
         </p>
 
         <figure class="picture" aria-label="Conditional reference loading">
@@ -1297,22 +1297,22 @@
             </thead>
             <tbody>
               <tr>
-                <td><a href="../SKILL.md">SKILL.md</a></td>
+                <td><a href="../skills/sdlc-autopilot/SKILL.md">SKILL.md</a></td>
                 <td>On skill activation</td>
                 <td>Main workflow, modes, safety rules, AI-review limits, token policy, and dynamic skill delegation.</td>
               </tr>
               <tr>
-                <td><a href="../references/self-verification.md">references/self-verification.md</a></td>
+                <td><a href="../skills/sdlc-autopilot/references/self-verification.md">references/self-verification.md</a></td>
                 <td>Ready Gate for Standard and Full</td>
                 <td>Trust boundary, ten critical outcomes, contradiction protocol, report format, and cross-model review prompt spec.</td>
               </tr>
               <tr>
-                <td><a href="../references/deep-audit.md">references/deep-audit.md</a></td>
+                <td><a href="../skills/sdlc-autopilot/references/deep-audit.md">references/deep-audit.md</a></td>
                 <td>Full mode</td>
                 <td>ASVS 5.0.0 and NIST SSDF mapping, AI-assisted security review patterns, guardrail library, API contract validation, migration guidance, and convergence protocol.</td>
               </tr>
               <tr>
-                <td><a href="../references/deployment.md">references/deployment.md</a></td>
+                <td><a href="../skills/sdlc-autopilot/references/deployment.md">references/deployment.md</a></td>
                 <td>Deploy phase only</td>
                 <td>Detection logic, deploy commands, rollback guidance, health checks, and explicit approval rules.</td>
               </tr>
@@ -1324,7 +1324,7 @@
           <p>
             If an installed copy contains only <code>SKILL.md</code>, the agent cannot truthfully perform the documented Full-mode deep audit,
             Ready Gate self-check, deployment guidance, or script-enforced verification. The correct fix is to reinstall or copy the complete
-            <code>sdlc-autopilot/</code> folder with <code>references/</code> and <code>scripts/</code>.
+            <code>skills/sdlc-autopilot/</code> folder with <code>references/</code> and <code>scripts/</code>.
           </p>
         </div>
       </section>
@@ -1559,21 +1559,24 @@
           Some intentionally vulnerable fixture code exists under <code>evals/fixtures/</code> for testing agent behavior.
         </p>
         <pre aria-label="Repository map">sdlc-autopilot/
-├── SKILL.md
+├── skills/
+│   └── sdlc-autopilot/
+│       ├── SKILL.md
+│       ├── references/
+│       │   ├── self-verification.md
+│       │   ├── deep-audit.md
+│       │   └── deployment.md
+│       └── scripts/
+│           ├── detect-toolchain.sh
+│           ├── run-gates.sh
+│           ├── verify-inversion.sh
+│           └── verify-pipeline.sh
 ├── GUIDANCE.md
 ├── README.md
 ├── LICENSE.txt
-├── references/
-│   ├── self-verification.md
-│   ├── deep-audit.md
-│   └── deployment.md
 ├── scripts/
-│   ├── detect-toolchain.sh
-│   ├── run-gates.sh
 │   ├── run-evals.sh
 │   ├── run-agent-evals.py
-│   ├── verify-inversion.sh
-│   ├── verify-pipeline.sh
 │   ├── skill-package.test.mjs
 │   └── verify-pipeline.test.mjs
 ├── examples/
@@ -1615,7 +1618,7 @@
         </p>
 
         <div class="source-row">
-          <strong><a href="../SKILL.md">SKILL.md</a></strong>
+          <strong><a href="../skills/sdlc-autopilot/SKILL.md">SKILL.md</a></strong>
           <span>Primary source for principles, AI review limits, Fix-Guard-Test-Verify, engineering standards, mode selection, Quick, Standard, Full, expert mode, dynamic delegation, and safety rules.</span>
         </div>
         <div class="source-row">
@@ -1631,19 +1634,19 @@
           <span>Companion explanation for activation model, current modes, verification model, cross-model review, deployment safety, graceful degradation, and repo map.</span>
         </div>
         <div class="source-row">
-          <strong><a href="../references/self-verification.md">self-verification.md</a></strong>
+          <strong><a href="../skills/sdlc-autopilot/references/self-verification.md">self-verification.md</a></strong>
           <span>Ready Gate trust boundary, outcomes, contradiction protocol, Quick inline check, report format, severity rules, and cross-model review prompt spec.</span>
         </div>
         <div class="source-row">
-          <strong><a href="../references/deep-audit.md">deep-audit.md</a></strong>
+          <strong><a href="../skills/sdlc-autopilot/references/deep-audit.md">deep-audit.md</a></strong>
           <span>Full-mode ASVS/NIST mapping, AI-assisted security review patterns, guardrail examples, API contract validation, database migration guidance, and convergence protocol.</span>
         </div>
         <div class="source-row">
-          <strong><a href="../references/deployment.md">deployment.md</a></strong>
+          <strong><a href="../skills/sdlc-autopilot/references/deployment.md">deployment.md</a></strong>
           <span>Deployment detection order, commands, rollbacks, health checks, failure handling, production rule, and explicit approval requirement.</span>
         </div>
         <div class="source-row">
-          <strong><a href="../scripts/verify-pipeline.sh">verify-pipeline.sh</a></strong>
+          <strong><a href="../skills/sdlc-autopilot/scripts/verify-pipeline.sh">verify-pipeline.sh</a></strong>
           <span>Evidence-based verifier used at the Ready Gate. It checks tracked, staged, and untracked diffs, tests, coverage signals, guardrails, secrets, dangerous patterns, suppression markers, and optional inversion.</span>
         </div>
         <div class="source-row">

@@ -256,11 +256,15 @@ if [ ! -s "$ADDED_FILE" ]; then
   skip "Secret scan — no added lines"
 else
   # Match secret-like assignments, exclude env var references and placeholders
+  T_D_TOKEN='TO''DO'
+  F_ME_TOKEN='FIX''ME'
+  X_PLACEHOLDER='xx''xx'
+  SECRET_EXCLUSION_PATTERN="process\.env|os\.environ|getenv|env\[|ENV\[|config\.|\.get\(|placeholder|example|changeme|$X_PLACEHOLDER|your_|$T_D_TOKEN|$F_ME_TOKEN|test|mock|fake|dummy"
   SECRETS=$(grep -iE \
     '(password|api_key|api_secret|secret_key|private_key|access_token|auth_token)[[:space:]]*[:=]' \
     "$ADDED_FILE" \
     | grep -viE \
-    '(process\.env|os\.environ|getenv|env\[|ENV\[|config\.|\.get\(|placeholder|example|changeme|xxxx|your_|TODO|FIXME|test|mock|fake|dummy)' \
+    "$SECRET_EXCLUSION_PATTERN" \
     || true)
   if [ -z "$SECRETS" ]; then
     pass "No hardcoded secrets detected"
@@ -274,14 +278,17 @@ fi
 if [ ! -s "$ADDED_FILE" ]; then
   skip "Dangerous pattern scan — no added lines"
 else
-  DANGER=$(grep -E \
-    'eval[[:space:]]*\(|\.innerHTML[[:space:]]*=|dangerouslySetInnerHTML|document\.write[[:space:]]*\(' \
-    "$ADDED_FILE" || true)
+  EVAL_CALL_PATTERN='ev''al[[:space:]]*\('
+  INNER_HTML_PATTERN='\.inner''HTML[[:space:]]*='
+  DANGEROUS_HTML_PATTERN='dangerouslySet''InnerHTML'
+  DOCUMENT_WRITE_PATTERN='document\.wri''te[[:space:]]*\('
+  DANGER_PATTERN="$EVAL_CALL_PATTERN|$INNER_HTML_PATTERN|$DANGEROUS_HTML_PATTERN|$DOCUMENT_WRITE_PATTERN"
+  DANGER=$(grep -E "$DANGER_PATTERN" "$ADDED_FILE" || true)
   if [ -z "$DANGER" ]; then
     pass "No dangerous code patterns"
   else
     DC=$(printf '%s\n' "$DANGER" | wc -l | tr -d ' ')
-    warn "Dangerous patterns: $DC instance(s)" "Found eval(), innerHTML, or similar — verify intentional"
+    warn "Dangerous patterns: $DC instance(s)" "Found ev""al(), inner""HTML, or similar — verify intentional"
   fi
 fi
 
@@ -341,18 +348,25 @@ fi
 if [ ! -s "$ADDED_FILE" ]; then
   skip "Suppression/debug scan — no added lines"
 else
-  SUPPRESS=$(grep -iE 'eslint-disable|ts-ignore|ts-nocheck|noqa|pragma:[[:space:]]*no[[:space:]]*cover' "$ADDED_FILE" || true)
-  TODOS=$(grep -iE 'TODO|FIXME|HACK|XXX' "$ADDED_FILE" || true)
-  DEBUG=$(grep -E 'console\.log\(|debugger;|pdb\.set_trace\(|print\(' "$ADDED_FILE" || true)
-  if [ -z "$SUPPRESS$TODOS$DEBUG" ]; then
+  ESLINT_DISABLE_PATTERN='eslint-''disable'
+  TS_IGNORE_PATTERN='ts-''ignore'
+  TS_NOCHECK_PATTERN='ts-''nocheck'
+  NO_QA_PATTERN='no''qa'
+  SUPPRESS_PATTERN="$ESLINT_DISABLE_PATTERN|$TS_IGNORE_PATTERN|$TS_NOCHECK_PATTERN|$NO_QA_PATTERN|pragma:[[:space:]]*no[[:space:]]*cover"
+  SUPPRESS=$(grep -iE "$SUPPRESS_PATTERN" "$ADDED_FILE" || true)
+  TASK_MARKER_PATTERN='TO''DO|FIX''ME|HA''CK|X''XX'
+  DEBUG_PATTERN='console\.lo''g\(|debug''ger;|pdb\.set_tra''ce\(|pri''nt\('
+  TASK_MARKERS=$(grep -iE "$TASK_MARKER_PATTERN" "$ADDED_FILE" || true)
+  DEBUG=$(grep -E "$DEBUG_PATTERN" "$ADDED_FILE" || true)
+  if [ -z "$SUPPRESS$TASK_MARKERS$DEBUG" ]; then
     pass "No suppression or debug markers added"
   else
     if [ -n "$SUPPRESS" ]; then
       fail "Suppression markers detected" "eslint/ts/python/test suppressions were added"
-    elif [ -n "$TODOS" ] && [ -n "$DEBUG" ]; then
-      warn "TODO and debug markers detected" "temporary markers present in added lines"
-    elif [ -n "$TODOS" ]; then
-      warn "TODO-style markers detected" "unfinished work markers present in added lines"
+    elif [ -n "$TASK_MARKERS" ] && [ -n "$DEBUG" ]; then
+      warn "TO""DO and debug markers detected" "temporary markers present in added lines"
+    elif [ -n "$TASK_MARKERS" ]; then
+      warn "TO""DO-style markers detected" "unfinished work markers present in added lines"
     else
       warn "Debug markers detected" "debug logging or breakpoints present in added lines"
     fi

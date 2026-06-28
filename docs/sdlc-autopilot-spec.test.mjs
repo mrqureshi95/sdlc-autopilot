@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(resolve(here, "sdlc-autopilot-spec.html"), "utf8");
-const skill = readFileSync(resolve(here, "../SKILL.md"), "utf8");
+const skill = readFileSync(resolve(here, "../skills/sdlc-autopilot/SKILL.md"), "utf8");
 const evals = JSON.parse(readFileSync(resolve(here, "../evals/evals.json"), "utf8"));
 const skillLineCount = skill.trimEnd().split(/\n/).length;
 
@@ -21,14 +21,14 @@ for (const tab of requiredTabs) {
 }
 
 const requiredSources = [
-  "../SKILL.md",
+  "../skills/sdlc-autopilot/SKILL.md",
   "../README.md",
   "../LICENSE.txt",
   "../GUIDANCE.md",
-  "../references/self-verification.md",
-  "../references/deep-audit.md",
-  "../references/deployment.md",
-  "../scripts/verify-pipeline.sh",
+  "../skills/sdlc-autopilot/references/self-verification.md",
+  "../skills/sdlc-autopilot/references/deep-audit.md",
+  "../skills/sdlc-autopilot/references/deployment.md",
+  "../skills/sdlc-autopilot/scripts/verify-pipeline.sh",
   "../scripts/skill-package.test.mjs",
   "../scripts/verify-pipeline.test.mjs",
   "../evals/evals.json",
@@ -59,8 +59,8 @@ const requiredCopy = [
   "Release target: skills.sh",
   "Access And Distribution",
   "SKILL.md</code>-only install is incomplete",
-  "sdlc-autopilot/</code> folder",
-  "npx skills add mrqureshi95/sdlc-autopilot",
+  "skills/sdlc-autopilot/</code> folder",
+  "npx skills add mrqureshi95/sdlc-autopilot --skill sdlc-autopilot",
 ];
 
 for (const phrase of requiredCopy) {

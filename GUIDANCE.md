@@ -19,10 +19,10 @@ The skill is triggered by its description, which is intentionally broad enough t
 
 Once triggered, the agent should load only what it needs:
 
-- [SKILL.md](SKILL.md) for the main workflow.
-- [references/self-verification.md](references/self-verification.md) only at the Ready Gate.
-- [references/deep-audit.md](references/deep-audit.md) only in Full mode.
-- [references/deployment.md](references/deployment.md) only for deploy work.
+- [skills/sdlc-autopilot/SKILL.md](skills/sdlc-autopilot/SKILL.md) for the main workflow.
+- [skills/sdlc-autopilot/references/self-verification.md](skills/sdlc-autopilot/references/self-verification.md) only at the Ready Gate.
+- [skills/sdlc-autopilot/references/deep-audit.md](skills/sdlc-autopilot/references/deep-audit.md) only in Full mode.
+- [skills/sdlc-autopilot/references/deployment.md](skills/sdlc-autopilot/references/deployment.md) only for deploy work.
 
 This keeps the workflow useful for large codebases and vibe-coding sessions where instruction bloat can crowd out the actual repo context.
 
@@ -113,7 +113,7 @@ The crucial change is that verification is unified. The agent no longer needs se
 Full mode keeps Standard mode but adds:
 
 - User approval before implementation.
-- Deeper security review via [references/deep-audit.md](references/deep-audit.md).
+- Deeper security review via [skills/sdlc-autopilot/references/deep-audit.md](skills/sdlc-autopilot/references/deep-audit.md).
 - A convergence pass on structural and security changes.
 - Stronger executable guardrail expectations.
 
@@ -152,7 +152,7 @@ The current repo uses two verification layers.
 
 ### Layer 1: External Script
 
-[scripts/verify-pipeline.sh](scripts/verify-pipeline.sh) checks repo evidence, not agent narration.
+[skills/sdlc-autopilot/scripts/verify-pipeline.sh](skills/sdlc-autopilot/scripts/verify-pipeline.sh) checks repo evidence, not agent narration.
 
 For Standard and Full mode it looks for:
 
@@ -168,7 +168,7 @@ In Full mode it also looks for security-specific guardrail signals.
 
 ### Layer 2: Critical Outcomes
 
-[references/self-verification.md](references/self-verification.md) is now intentionally short. It focuses on 10 critical outcomes rather than a long ledger. That makes it more likely the agent will use it honestly instead of rubber-stamping a giant checklist.
+[skills/sdlc-autopilot/references/self-verification.md](skills/sdlc-autopilot/references/self-verification.md) is now intentionally short. It focuses on 10 critical outcomes rather than a long ledger. That makes it more likely the agent will use it honestly instead of rubber-stamping a giant checklist.
 
 ### Contradictions
 
@@ -259,11 +259,11 @@ That shift is important if the skill is supposed to stay valuable to people usin
 
 ## Repo Map
 
-- [SKILL.md](SKILL.md): live workflow.
-- [references/self-verification.md](references/self-verification.md): critical outcomes.
-- [references/deep-audit.md](references/deep-audit.md): deep security review prompts and patterns.
-- [references/deployment.md](references/deployment.md): deploy gating.
-- [scripts/verify-pipeline.sh](scripts/verify-pipeline.sh): external evidence checks.
+- [skills/sdlc-autopilot/SKILL.md](skills/sdlc-autopilot/SKILL.md): live workflow.
+- [skills/sdlc-autopilot/references/self-verification.md](skills/sdlc-autopilot/references/self-verification.md): critical outcomes.
+- [skills/sdlc-autopilot/references/deep-audit.md](skills/sdlc-autopilot/references/deep-audit.md): deep security review prompts and patterns.
+- [skills/sdlc-autopilot/references/deployment.md](skills/sdlc-autopilot/references/deployment.md): deploy gating.
+- [skills/sdlc-autopilot/scripts/verify-pipeline.sh](skills/sdlc-autopilot/scripts/verify-pipeline.sh): external evidence checks.
 - [scripts/run-agent-evals.py](scripts/run-agent-evals.py): artifact-based eval harness.
 - [evals/evals.json](evals/evals.json): manual scenarios and optional machine checks.
 - [examples/quick-change-walkthrough.md](examples/quick-change-walkthrough.md), [examples/bug-fix-walkthrough.md](examples/bug-fix-walkthrough.md), [examples/feature-walkthrough.md](examples/feature-walkthrough.md): aligned walkthroughs.

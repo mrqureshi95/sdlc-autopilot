@@ -2,7 +2,7 @@
 
 ## How to Add a Deployment Target
 
-1. Edit `references/deployment.md`
+1. Edit `skills/sdlc-autopilot/references/deployment.md`
 2. Add a new section following this template:
 
 ```markdown
@@ -30,11 +30,11 @@
 ```
 
 3. Add detection logic to the Detection Logic section (order matters — first match wins)
-4. Add detection to `scripts/detect-toolchain.sh`
+4. Add detection to `skills/sdlc-autopilot/scripts/detect-toolchain.sh`
 
 ## How to Add Audit Patterns
 
-1. Edit `references/deep-audit.md`
+1. Edit `skills/sdlc-autopilot/references/deep-audit.md`
 2. Add grep patterns to the relevant OWASP category, or create a new section
 3. For each pattern, include:
    - The grep pattern to find the vulnerability
@@ -43,7 +43,7 @@
 
 ## How to Add Guardrail Patterns
 
-1. Edit `references/deep-audit.md`, Section 2 (Guardrail Pattern Library)
+1. Edit `skills/sdlc-autopilot/references/deep-audit.md`, Section 2 (Guardrail Pattern Library)
 2. Follow this template:
 
 ```markdown
@@ -77,8 +77,8 @@ Every guardrail pattern MUST include a paired test.
 
 ## Development Principles
 
-- **SKILL.md stays under 340 lines.** If you need to add content, find something to cut.
-- **Reference files are loaded conditionally.** Don't add content to SKILL.md that's only needed in one mode.
+- **`skills/sdlc-autopilot/SKILL.md` stays under 340 lines.** If you need to add content, find something to cut.
+- **Reference files are loaded conditionally.** Don't add content to `SKILL.md` that's only needed in one mode.
 - **Every guardrail has a test.** No exceptions.
 - **Token efficiency matters.** Every line earns its keep.
 - **Proportionality is key.** Don't gold-plate cosmetic findings. Don't skip security guards.

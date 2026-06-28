@@ -8,7 +8,7 @@ import test from "node:test";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..");
-const verifier = resolve(repoRoot, "scripts", "verify-pipeline.sh");
+const verifier = resolve(repoRoot, "skills", "sdlc-autopilot", "scripts", "verify-pipeline.sh");
 
 function run(command, args, cwd) {
   return execFileSync(command, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });

@@ -16,6 +16,7 @@
 - Eval language and walkthroughs were rewritten to focus on outcomes instead of process theater.
 - Full-mode deep audit guidance now maps high-risk review work to OWASP ASVS 5.0.0 areas and NIST SSDF practice groups without claiming formal compliance.
 - Installation guidance now requires the complete `sdlc-autopilot/` skill package instead of a `SKILL.md`-only copy.
+- The installable skill now lives under `skills/sdlc-autopilot/` so GitHub installs copy `SKILL.md`, `references/`, and runtime `scripts/` as one package.
 - The release package no longer includes the obsolete `SKILL-rewrite-proposal.md` draft.
 - The browser specification now reflects the public release path and derives its `SKILL.md` line-count check from the live file.
 
@@ -33,7 +34,7 @@
 ## [1.0.0] - 2026-03-26
 
 ### Added
-- Core SKILL.md with quick/standard/full mode pipelines
+- Core `SKILL.md` with quick/standard/full mode pipelines
 - Fix-Guard-Test-Verify loop — the core innovation
 - Mode selection logic (risk classification + user language signals)
 - 7-phase standard pipeline with 2-pass audit

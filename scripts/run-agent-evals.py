@@ -76,8 +76,9 @@ def prepare_workspace(repo_root: Path, fixture_dir: Path) -> Path:
 
     scripts_dir = workdir / "scripts"
     scripts_dir.mkdir(exist_ok=True)
+    runtime_scripts_dir = repo_root / "skills" / "sdlc-autopilot" / "scripts"
     for script_name in ("verify-pipeline.sh", "verify-inversion.sh"):
-        shutil.copy2(repo_root / "scripts" / script_name, scripts_dir / script_name)
+        shutil.copy2(runtime_scripts_dir / script_name, scripts_dir / script_name)
 
     ensure_git_repo(workdir)
     maybe_install_dependencies(workdir)
