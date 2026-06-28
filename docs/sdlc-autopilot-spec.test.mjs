@@ -27,6 +27,7 @@ const requiredSources = [
   "../references/deep-audit.md",
   "../references/deployment.md",
   "../scripts/verify-pipeline.sh",
+  "../scripts/skill-package.test.mjs",
   "../scripts/verify-pipeline.test.mjs",
   "../evals/evals.json",
   "../evals/agent-run.schema.json",
@@ -55,6 +56,8 @@ const requiredCopy = [
   "NIST SSDF",
   "Repository visibility: private",
   "Access And Distribution",
+  "SKILL.md</code>-only install is incomplete",
+  "sdlc-autopilot/</code> folder",
 ];
 
 for (const phrase of requiredCopy) {

@@ -777,7 +777,8 @@
         <p class="section-intro">
           This specification describes the current skill package in this repository. The GitHub repository is private, so people without repository access
           cannot browse, clone, fork, or install directly from the GitHub source. If the skill files are shared or installed for someone, those local files
-          remain visible to that user because skills are file-based instructions and scripts.
+          remain visible to that user because skills are file-based instructions and scripts. The installed copy must include the whole skill package,
+          not only <code>SKILL.md</code>.
         </p>
         <div class="grid three">
           <article class="card">
@@ -787,6 +788,10 @@
           <article class="card">
             <h3>Installed Copies</h3>
             <p>Anyone who receives an installed copy can inspect the skill instructions, references, scripts, examples, and docs included in that copy.</p>
+          </article>
+          <article class="card">
+            <h3>Package Completeness</h3>
+            <p>A <code>SKILL.md</code>-only install is incomplete. Full mode, Ready Gate verification, deployment gating, and script evidence require sibling <code>references/</code> and <code>scripts/</code> files.</p>
           </article>
           <article class="card">
             <h3>License File</h3>
@@ -1246,7 +1251,8 @@
         <h2>Reference Loading</h2>
         <p class="section-intro">
           The skill intentionally keeps <code>SKILL.md</code> lean. Additional references are loaded only when the workflow needs them.
-          This is part of the skill's token policy and keeps large codebase work from drowning in process text.
+          This is part of the skill's token policy and keeps large codebase work from drowning in process text. These are local bundled resources,
+          not remote files, so they must be installed in the same <code>sdlc-autopilot/</code> skill folder.
         </p>
 
         <figure class="picture" aria-label="Conditional reference loading">
@@ -1312,6 +1318,14 @@
               </tr>
             </tbody>
           </table>
+        </div>
+        <div class="note red">
+          <h3>Incomplete Install Behavior</h3>
+          <p>
+            If an installed copy contains only <code>SKILL.md</code>, the agent cannot truthfully perform the documented Full-mode deep audit,
+            Ready Gate self-check, deployment guidance, or script-enforced verification. The correct fix is to reinstall or copy the complete
+            <code>sdlc-autopilot/</code> folder with <code>references/</code> and <code>scripts/</code>.
+          </p>
         </div>
       </section>
 
@@ -1560,6 +1574,7 @@
 │   ├── run-agent-evals.py
 │   ├── verify-inversion.sh
 │   ├── verify-pipeline.sh
+│   ├── skill-package.test.mjs
 │   └── verify-pipeline.test.mjs
 ├── examples/
 │   ├── quick-change-walkthrough.md
@@ -1634,6 +1649,10 @@
         <div class="source-row">
           <strong><a href="../scripts/verify-pipeline.test.mjs">verify-pipeline.test.mjs</a></strong>
           <span>Regression test proving the verifier includes untracked files in change evidence.</span>
+        </div>
+        <div class="source-row">
+          <strong><a href="../scripts/skill-package.test.mjs">skill-package.test.mjs</a></strong>
+          <span>Regression test proving referenced bundled resources exist and installation docs require the whole skill package instead of a SKILL.md-only copy.</span>
         </div>
         <div class="source-row">
           <strong><a href="../evals/evals.json">evals.json</a></strong>

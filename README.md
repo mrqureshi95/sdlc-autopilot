@@ -125,12 +125,14 @@ This repository includes intentionally vulnerable example code under `evals/fixt
 
 ## Installation
 
+SDLC Autopilot is a **multi-file skill package**. `SKILL.md` is the entry point, but it intentionally loads bundled files from `references/` and runs scripts from `scripts/` when the workflow reaches those stages. Do not install or copy `SKILL.md` by itself.
+
 ### All Agents (Recommended)
 ```bash
 npx skills add mrqureshi95/sdlc-autopilot
 ```
 
-This works with Claude Code, Cursor, GitHub Copilot, Windsurf, Codex, Cline, Roo, OpenCode, Amp, and 30+ other agents. The CLI auto-detects your installed agents.
+This works with Claude Code, Cursor, GitHub Copilot, Windsurf, Codex, Cline, Roo, OpenCode, Amp, and 30+ other agents. The CLI auto-detects your installed agents. A correct install places the whole `sdlc-autopilot/` package in the agent's skills directory.
 
 ### Install globally (available across all projects)
 ```bash
@@ -142,12 +144,32 @@ npx skills add mrqureshi95/sdlc-autopilot -g
 npx skills add mrqureshi95/sdlc-autopilot -a claude-code -a cursor -a github-copilot
 ```
 
+### Required installed files
+After installation, the installed skill directory must include these bundled resources:
+
+```text
+sdlc-autopilot/
+├── SKILL.md
+├── references/
+│   ├── self-verification.md
+│   ├── deep-audit.md
+│   └── deployment.md
+└── scripts/
+    ├── verify-pipeline.sh
+    └── verify-inversion.sh
+```
+
+The repository includes additional docs, examples, evals, and helper scripts. They are useful for development and review, but the files above are the minimum runtime package for the workflow described in `SKILL.md`.
+
 ### Manual Installation
-If you prefer not to use the CLI, copy the `SKILL.md` file to your agent's skills directory:
-- **Claude Code:** `.claude/skills/sdlc-autopilot/SKILL.md`
-- **GitHub Copilot:** `.agents/skills/sdlc-autopilot/SKILL.md`
-- **Cursor:** `.agents/skills/sdlc-autopilot/SKILL.md`
-- **Windsurf:** `.windsurf/skills/sdlc-autopilot/SKILL.md`
+If you prefer not to use the CLI, copy the entire `sdlc-autopilot/` skill folder into your agent's skills directory. Do not copy `SKILL.md` by itself.
+
+- **Claude Code:** `.claude/skills/sdlc-autopilot/`
+- **GitHub Copilot:** `.agents/skills/sdlc-autopilot/`
+- **Cursor:** `.agents/skills/sdlc-autopilot/`
+- **Windsurf:** `.windsurf/skills/sdlc-autopilot/`
+
+If you already installed the skill and only see `SKILL.md`, reinstall with the full package or copy `references/` and `scripts/` into the same `sdlc-autopilot/` folder. Without those files, Full mode cannot load `references/deep-audit.md`, the Ready Gate cannot load `references/self-verification.md`, deployment guidance cannot load `references/deployment.md`, and the agent cannot run `scripts/verify-pipeline.sh`.
 
 ---
 
@@ -227,6 +249,7 @@ sdlc-autopilot/
 │   ├── run-agent-evals.py   # Machine-checkable harness for agent run artifacts
 │   ├── verify-inversion.sh  # Prototype execution-based inversion verifier
 │   ├── verify-pipeline.sh   # External pipeline verification (Ready Gate)
+│   ├── skill-package.test.mjs # Regression test for complete package/install guidance
 │   └── run-evals.sh         # Validate fixture structure (dev only)
 ├── evals/
 │   ├── evals.json        # 26 evaluation scenarios (manual verification)

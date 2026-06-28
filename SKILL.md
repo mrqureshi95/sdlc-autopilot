@@ -12,6 +12,8 @@ One rough prompt in. A safer implementation workflow out.
 
 **Token policy:** Keep the core skill lean. Load reference files only when needed: `references/self-verification.md` at the Ready Gate, `references/deep-audit.md` in Full mode, and `references/deployment.md` only when deployment is requested.
 
+**Installation requirement:** Install this as the complete `sdlc-autopilot/` skill package, not as `SKILL.md` alone. The sibling `references/` and `scripts/` files are bundled resources required for Full mode, the Ready Gate, deployment gating, and script-enforced evidence. If a required bundled file is missing, state that the installed skill package is incomplete, use the best inline fallback available, and tell the user to reinstall or copy the whole skill package before claiming Full-mode or Ready Gate evidence.
+
 ---
 
 ## When Not To Use The Full Workflow
