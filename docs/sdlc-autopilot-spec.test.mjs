@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(resolve(here, "sdlc-autopilot-spec.html"), "utf8");
+const skill = readFileSync(resolve(here, "../SKILL.md"), "utf8");
 const evals = JSON.parse(readFileSync(resolve(here, "../evals/evals.json"), "utf8"));
+const skillLineCount = skill.trimEnd().split(/\n/).length;
 
 const requiredTabs = [
   'data-tab="quick"',
@@ -54,10 +56,11 @@ const requiredCopy = [
   "untracked files",
   "ASVS 5.0.0",
   "NIST SSDF",
-  "Repository visibility: private",
+  "Release target: skills.sh",
   "Access And Distribution",
   "SKILL.md</code>-only install is incomplete",
   "sdlc-autopilot/</code> folder",
+  "npx skills add mrqureshi95/sdlc-autopilot",
 ];
 
 for (const phrase of requiredCopy) {
@@ -67,6 +70,9 @@ for (const phrase of requiredCopy) {
 assert(!/https?:\/\//.test(html), "spec should not depend on external URLs or assets");
 assert(!html.includes("<title id="), "SVG titles create native hover tooltips and should be avoided");
 assert(html.includes(`${evals.evals.length} scenarios`), "documented eval scenario count should match evals/evals.json");
+assert(html.includes(`<b>${skillLineCount}</b>`), "documented SKILL.md line count should match SKILL.md");
+assert(!html.includes("Repository visibility: private"), "spec should not claim the public-release repository is private");
+assert(!html.includes("The GitHub repository is private"), "spec should not include stale private-repository access language");
 assert(/addEventListener\("click"/.test(html), "tab click behavior should be wired");
 assert(/addEventListener\("keydown"/.test(html), "keyboard tab behavior should be wired");
 

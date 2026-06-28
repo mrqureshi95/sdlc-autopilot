@@ -17,6 +17,7 @@
 - Full-mode deep audit guidance now maps high-risk review work to OWASP ASVS 5.0.0 areas and NIST SSDF practice groups without claiming formal compliance.
 - Installation guidance now requires the complete `sdlc-autopilot/` skill package instead of a `SKILL.md`-only copy.
 - The release package no longer includes the obsolete `SKILL-rewrite-proposal.md` draft.
+- The browser specification now reflects the public release path and derives its `SKILL.md` line-count check from the live file.
 
 ### Added
 - Outcome-focused machine-check support in [scripts/run-agent-evals.py](scripts/run-agent-evals.py): `diff_not_contains`, `verify_output_contains`, `transcript_not_contains`, and `file_contains`.

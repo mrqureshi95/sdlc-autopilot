@@ -674,7 +674,7 @@
             <span class="chip">Standard pipeline: 5 phases</span>
             <span class="chip">Core loop: Fix-Guard-Test-Verify</span>
             <span class="chip">Current branch: main</span>
-            <span class="chip">Repository visibility: private</span>
+            <span class="chip">Release target: skills.sh</span>
           </div>
         </div>
 
@@ -724,7 +724,7 @@
         <div class="grid four">
           <article class="card metric">
             <span>Live skill file</span>
-            <b>203</b>
+            <b>205</b>
             <span>lines in <a href="../SKILL.md">SKILL.md</a></span>
           </article>
           <article class="card metric">
@@ -775,15 +775,15 @@
       <section id="distribution">
         <h2>Access And Distribution</h2>
         <p class="section-intro">
-          This specification describes the current skill package in this repository. The GitHub repository is private, so people without repository access
-          cannot browse, clone, fork, or install directly from the GitHub source. If the skill files are shared or installed for someone, those local files
-          remain visible to that user because skills are file-based instructions and scripts. The installed copy must include the whole skill package,
-          not only <code>SKILL.md</code>.
+          This specification describes the current skill package in this repository. The public release path is the complete
+          <code>mrqureshi95/sdlc-autopilot</code> skill package, installable through the skills CLI when the repository is available to the installer.
+          Anyone who receives an installed copy can inspect those local files because skills are file-based instructions and scripts.
+          The installed copy must include the whole skill package, not only <code>SKILL.md</code>.
         </p>
         <div class="grid three">
           <article class="card">
-            <h3>Repository</h3>
-            <p><span class="badge">Private</span> The source repository is private at the time this specification was finalized.</p>
+            <h3>Public Release</h3>
+            <p><span class="badge">skills.sh</span> Use <code>npx skills add mrqureshi95/sdlc-autopilot</code> when installing from the published repository.</p>
           </article>
           <article class="card">
             <h3>Installed Copies</h3>
@@ -1648,7 +1648,7 @@
         </div>
         <div class="source-row">
           <strong><a href="../scripts/verify-pipeline.test.mjs">verify-pipeline.test.mjs</a></strong>
-          <span>Regression test proving the verifier includes untracked files in change evidence.</span>
+          <span>Regression tests proving the verifier includes untracked files and can run changed Node test files when no package runner exists.</span>
         </div>
         <div class="source-row">
           <strong><a href="../scripts/skill-package.test.mjs">skill-package.test.mjs</a></strong>
