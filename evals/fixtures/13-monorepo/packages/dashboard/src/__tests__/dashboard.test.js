@@ -1,4 +1,4 @@
-const { renderSummary } = require("../src/dashboard");
+const { renderSummary } = require("../dashboard");
 
 jest.mock("../../shared/src/indx", () => ({
   formatCurrency: (v) => "$" + v.toFixed(2),

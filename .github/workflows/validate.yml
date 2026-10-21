@@ -1,57 +1,53 @@
-name: Validate Evals
-
+name: Validate package and evidence helpers
 on:
   push:
-    paths:
-      - 'README.md'
-      - 'GUIDANCE.md'
-      - 'SECURITY.md'
-      - 'CHANGELOG.md'
-      - 'skills/**'
-      - 'evals/**'
-      - 'scripts/**'
-      - 'docs/**'
-      - '.github/workflows/validate.yml'
   pull_request:
-    paths:
-      - 'README.md'
-      - 'GUIDANCE.md'
-      - 'SECURITY.md'
-      - 'CHANGELOG.md'
-      - 'skills/**'
-      - 'evals/**'
-      - 'scripts/**'
-      - 'docs/**'
-      - '.github/workflows/validate.yml'
-
+permissions:
+  contents: read
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Validate eval fixtures
-        run: sh scripts/run-evals.sh
-
-      - name: Validate release package and docs
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Runtime and harness regressions
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -q
+      - name: Package and docs
         run: node --test scripts/verify-pipeline.test.mjs docs/sdlc-autopilot-spec.test.mjs scripts/skill-package.test.mjs
-
-      - name: Check shell script syntax
+      - name: Controlled verifier comparison
+        run: python3 scripts/compare-verifiers.py
+      - name: Structural evaluation validation
+        run: sh scripts/run-evals.sh
+      - name: Shell and Python syntax
         run: |
-          sh -n scripts/run-evals.sh
-          sh -n skills/sdlc-autopilot/scripts/detect-toolchain.sh
-          sh -n skills/sdlc-autopilot/scripts/run-gates.sh
-          sh -n skills/sdlc-autopilot/scripts/verify-pipeline.sh
-          sh -n skills/sdlc-autopilot/scripts/verify-inversion.sh
-
-      - name: Check Python syntax
-        run: python3 -m py_compile scripts/run-agent-evals.py
-
-      - name: Check SKILL.md line count
+          for script in scripts/*.sh skills/sdlc-autopilot/scripts/*.sh; do sh -n "$script"; done
+          python3 -m compileall -q scripts skills/sdlc-autopilot/scripts evals/oracles
+      - name: Prepare pinned evaluation runtime
+        run: python3 scripts/prepare-eval-runtime.py --output "$RUNNER_TEMP/sdlc-runtime"
+      - name: Validation dependency advisories
+        working-directory: evals/runtime
+        run: npm audit --audit-level=moderate
+      - name: Baseline fixtures and semantic controls
         run: |
-          lines=$(wc -l < skills/sdlc-autopilot/SKILL.md)
-          if [ "$lines" -gt 320 ]; then
-            echo "SKILL.md is $lines lines (limit: 320)"
-            exit 1
-          fi
-          echo "SKILL.md is $lines lines — OK"
+          python3 scripts/check-fixtures.py --runtime-dir "$RUNNER_TEMP/sdlc-runtime"
+          python3 scripts/check-oracles.py --runtime-dir "$RUNNER_TEMP/sdlc-runtime"
+      - name: Native runner and standalone installer controls
+        run: |
+          python3 scripts/check-runner-adapters.py --runtime-dir "$RUNNER_TEMP/sdlc-runtime"
+          python3 scripts/check-installation.py --runtime-dir "$RUNNER_TEMP/sdlc-runtime"
+      - name: Prepare maintained secret scanner
+        run: python3 scripts/prepare-security-tool.py --output "$RUNNER_TEMP/sdlc-security"
+      - name: Secret scanner controls and repository scan
+        run: |
+          python3 scripts/check-security-tool.py --binary "$RUNNER_TEMP/sdlc-security/gitleaks"
+          "$RUNNER_TEMP/sdlc-security/gitleaks" dir . --redact --no-banner --ignore-gitleaks-allow

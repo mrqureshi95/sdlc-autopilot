@@ -2,16 +2,7 @@
   "name": "14-deployment",
   "version": "1.0.0",
   "private": true,
-  "dependencies": {
-    "express": "^4.18.2"
-  },
-  "devDependencies": {
-    "jest": "^29.7.0",
-    "supertest": "^6.3.3"
-  },
   "scripts": {
-    "start": "node src/server.js",
-    "test": "jest",
-    "build": "echo 'build complete'"
+    "test": "node node_modules/vitest/vitest.mjs run --config .eval-runtime/vitest.config.mjs"
   }
 }

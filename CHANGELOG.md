@@ -2,37 +2,29 @@
 
 ## [Unreleased]
 
-### Changed
-- Standard mode is now a 5-phase workflow: Understand, Implement, Verify, Ready Gate, Ship.
-- The old split between gate/test, audit, and regression/final verification was collapsed into a single Verify phase.
-- LOG and ANNOUNCE ceremony was removed from the live workflow and from the primary documentation examples.
-- Quick mode is now described as a trivial-path flow with immediate promotion to Standard when behavior changes, tests, or guardrails are required.
-- Ready Gate language now centers on evidence: raw verifier output, critical outcomes, contradiction handling, honest limitations, and optional second-model review.
-- Expert mode is now explicit: it removes presentation overhead without weakening TDD bias, guardrails, edge-case closure, SSOT, DRY-with-judgment, or verification.
-- The self-verification reference was reduced to 10 critical outcomes and now states the Ready Gate trust boundary.
-- The external verifier was hardened with untracked-file detection, coverage-artifact checks when available, executable guardrail signals, stronger assertion-count checks in changed tests, and the existing safety scans.
-- The external verifier now runs changed Node `.test.mjs` / `.test.js` files with `node --test` when a project has no package-level test runner.
-- CI validation now runs the package/spec/verifier Node tests, all release shell script syntax checks, and Python syntax checks for the agent eval harness.
-- Eval language and walkthroughs were rewritten to focus on outcomes instead of process theater.
-- Full-mode deep audit guidance now maps high-risk review work to OWASP ASVS 5.0.0 areas and NIST SSDF practice groups without claiming formal compliance.
-- Installation guidance now requires the complete `sdlc-autopilot/` skill package instead of a `SKILL.md`-only copy.
-- The installable skill now lives under `skills/sdlc-autopilot/` so GitHub installs copy `SKILL.md`, `references/`, and runtime `scripts/` as one package.
-- The external verifier now counts Node `assert.equal(...)` / `assert.deepEqual(...)`-style test assertions as guardrail and assertion-count evidence.
-- Strict inversion verification now resolves the bundled `verify-inversion.sh` from the installed skill package and reports unsupported runner results as skipped rather than passed.
-- The release package no longer includes the obsolete `SKILL-rewrite-proposal.md` draft.
-- The browser specification now reflects the public release path and derives its `SKILL.md` line-count check from the live file.
+## [2.0.0] - 2026-10-21
+
+### Breaking changes
+- Helper exits now mean scoped checks satisfied (0), observed failure (1), or missing required evidence (2). Zero/opaque tests and unsupported automatic inversion no longer imply success. Review is separate from implementation; installed commands resolve from the complete skill folder.
 
 ### Added
-- Outcome-focused machine-check support in [scripts/run-agent-evals.py](scripts/run-agent-evals.py): `diff_not_contains`, `verify_output_contains`, `transcript_not_contains`, and `file_contains`.
-- Explicit expert-mode coverage in the eval suite.
-- Long-form guidance aligned with the live skill in [GUIDANCE.md](GUIDANCE.md).
-- Updated walkthroughs aligned with the current workflow in [examples/quick-change-walkthrough.md](examples/quick-change-walkthrough.md), [examples/bug-fix-walkthrough.md](examples/bug-fix-walkthrough.md), and [examples/feature-walkthrough.md](examples/feature-walkthrough.md).
-- Trust-model and non-use guidance in the live skill and public documentation.
-- Regression test for verifier handling of brand-new untracked files in [scripts/verify-pipeline.test.mjs](scripts/verify-pipeline.test.mjs).
-- Regression tests for Node `assert.*(...)` assertion counting, installed-skill strict inversion path resolution, and honest strict inversion skip reporting in [scripts/verify-pipeline.test.mjs](scripts/verify-pipeline.test.mjs).
-- Regression test for complete skill-package installation guidance and bundled resource references in [scripts/skill-package.test.mjs](scripts/skill-package.test.mjs).
-- Honest empirical evidence page and multi-agent reporting rules in [evals/empirical-results.md](evals/empirical-results.md).
-- Optional agent metadata fields in [evals/agent-run.schema.json](evals/agent-run.schema.json) for reproducible multi-agent eval campaigns.
+- Optional local real-task record template and a paired evaluation protocol for measuring task acceptance, defects, human rework, time and workflow friction. No usage telemetry or model campaign is enabled.
+
+### Changed
+- Public-release readiness: provider-neutral host guidance, bundled MIT notice, real three-host installer smoke, fresh Jest/Vitest/JUnit evidence adapters, and maintained checksum-pinned Gitleaks controls/CI. Fix negative JUnit counter cancellation; remove the vulnerable test-only sprintf-js chain with a scoped YAML override and compatibility control.
+- Follow-up re-audit: preserve final-state provenance across commands, require evidence per selected project, honor explicit empty configuration, handle Node TODO outcomes, detect index-flag-hidden edits without changing user flags, and align contributor/security/scenario guidance.
+- Add reproducible controlled verifier comparisons and a responsive, single-page printable HTML field guide.
+- Separate read-only review from implementation and risk selection; preserve authorization and user work without routine pauses or automatic cleanup.
+- Replace heuristic Ready Gate guarantees with scoped pass/fail/inconclusive/not-applicable evidence, exact Git provenance and optional task-start snapshots.
+- Combine branch/worktree/untracked changes with NUL-safe paths; report mixed ownership and scan exclusions honestly.
+- Remove assertion-count, stale-coverage and automatic-inversion guarantees; require positive supported test execution for behavioral evidence.
+- Run inspected explicit project checks with POSIX timeouts, no implicit downloads, and opt-in scoped fixes.
+- Replace unsafe security/deployment recipes with context-aware framework controls and platform-specific preparation/recovery guidance.
+- Make external-provider review opt-in, scoped and redacted; treat diffs/tool output as untrusted data.
+- Separate structural evaluation, semantic replay, text checks and human judgments. Pin the evaluation runtime, add adversarial regressions and evaluator-owned semantic oracles, and retain human criteria as pending.
+- Align README, guidance, browser overview, examples and evaluation prompts with the narrowed evidence contract. No agent pass-rate or performance claims.
+
+Earlier release notes below describe historical behavior, not current guarantees.
 
 ## [1.0.0] - 2026-03-26
 
@@ -55,5 +47,6 @@
 - Guardrail completeness check in Phase 5
 - Proportionality rules (structural/behavioral/cosmetic)
 
-[Unreleased]: https://github.com/mrqureshi95/sdlc-autopilot/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/mrqureshi95/sdlc-autopilot/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/mrqureshi95/sdlc-autopilot/releases/tag/v2.0.0
 [1.0.0]: https://github.com/mrqureshi95/sdlc-autopilot/releases/tag/v1.0.0

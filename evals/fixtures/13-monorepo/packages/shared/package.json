@@ -3,10 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "main": "src/index.js",
-  "devDependencies": {
-    "jest": "^29.7.0"
-  },
   "scripts": {
-    "test": "jest"
+    "test": "node node_modules/vitest/vitest.mjs run --config .eval-runtime/vitest.config.mjs"
   }
 }

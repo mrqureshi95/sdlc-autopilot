@@ -1,26 +1,9 @@
-# Quick Change Walkthrough
+# Cosmetic change
 
-## User Prompt
-> "change the primary button color from blue to green"
+Request: change the primary button color in two stylesheets.
 
-## What Happens
-
-### Mode Selection
-- Risk: low.
-- User language: no override.
-- **Mode: Quick**.
-
-### Quick Flow
-- Read the button styling file.
-- Confirm the change is a single-value cosmetic update with no behavior impact.
-- Change the color token or literal.
-- Run available checks.
-- Present a one-line summary and stop for confirmation.
-
-Example summary:
-
-```text
-Changed the primary button color from blue to green in Button.css. Verification: PASS. AI-reviewed, not human-audited.
-```
-
-If the work expands beyond that, Quick mode is no longer valid and the agent should promote to Standard immediately.
+Inspect both styles and affected usage. Use Quick because behavior and data
+contracts are unchanged; file count does not force promotion. Make the focused
+edits, run a relevant available style/build check if useful, and inspect the diff.
+Report the change and what was checked or left unverified. Commit/push/deploy only
+when covered by actual user authorization.
