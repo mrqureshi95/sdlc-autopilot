@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "checks": [
+    {
+      "name": "runtime-and-harness-regressions",
+      "kind": "test",
+      "runner": "unittest",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts",
+        "-p",
+        "test_*.py",
+        "-q"
+      ]
+    },
+    {
+      "name": "package-and-docs",
+      "kind": "test",
+      "runner": "node-test",
+      "argv": [
+        "node",
+        "--test",
+        "scripts/verify-pipeline.test.mjs",
+        "scripts/skill-package.test.mjs",
+        "docs/sdlc-autopilot-spec.test.mjs"
+      ]
+    },
+    {
+      "name": "eval-structure",
+      "kind": "lint",
+      "argv": [
+        "sh",
+        "scripts/run-evals.sh"
+      ]
+    },
+    {
+      "name": "maintained-secret-scan",
+      "kind": "security",
+      "argv": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--redact",
+        "--no-banner",
+        "--exit-code",
+        "1",
+        "--ignore-gitleaks-allow"
+      ]
+    }
+  ]
+}

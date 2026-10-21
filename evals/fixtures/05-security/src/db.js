@@ -1,4 +1,4 @@
-const Database = require("better-sqlite3");
+const { DatabaseSync: Database } = require("node:sqlite");
 const path = require("path");
 
 let db;
@@ -6,7 +6,7 @@ let db;
 function getDb() {
   if (!db) {
     db = new Database(path.join(__dirname, "..", "app.db"));
-    db.pragma("journal_mode = WAL");
+    db.exec("PRAGMA journal_mode = WAL");
   }
   return db;
 }

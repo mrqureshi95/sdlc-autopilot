@@ -1,4 +1,4 @@
-const Database = require("better-sqlite3");
+const { DatabaseSync: Database } = require("node:sqlite");
 
 let db;
 

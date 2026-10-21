@@ -1,122 +1,77 @@
 # Contributing to SDLC Autopilot
 
-## How to Add a Deployment Target
+The canonical workflow is `skills/sdlc-autopilot/SKILL.md`. Keep it concise and put
+conditional detail in the relevant reference. Preserve user intent, existing
+project conventions, instruction hierarchy, and actual authorization boundaries.
+Do not add ceremonial phases or promise guarantees the package cannot enforce.
 
-1. Edit `skills/sdlc-autopilot/references/deployment.md`
-2. Add a new section following this template:
+## Runtime changes
 
-```markdown
-## Platform Name
+Reproduce evidence/safety defects in disposable repositories before changing the
+helper. Cover meaningful outcomes: wrong success/failure, missing scope, path
+handling, stale provenance, zero execution, or unintended mutations. Preserve
+legitimate supported success cases as well as rejecting bypasses. Changes to
+assertion relevance, risk judgment, or agent behavior need contextual evaluation;
+keyword/heading checks do not prove them.
 
-**Detect:** What files/configs indicate this platform
+Checks are reviewed explicit argv arrays in `.sdlc-checks.json`, with project scopes
+and bounded execution. They must not implicitly fetch unpinned tools or rewrite a
+repository. New adapters should use maintained runner evidence, reject zero or
+uninterpretable execution, distinguish setup failures where supported, and document
+versions and limits. An exit-zero opaque script is not proof that tests ran.
+Keep unsupported evidence inconclusive without declaring useful work impossible.
 
-**Deploy:**
-\`\`\`bash
-# Commands to deploy
-\`\`\`
+## Security and deployment guidance
 
-**Rollback:**
-\`\`\`bash
-# Commands to rollback
-\`\`\`
+Use current primary framework/vendor sources. Explain the trust boundary, context,
+evidence, and residual risk. Prefer maintained platform controls to handwritten
+pseudo-sanitizers or grep-based vulnerability claims. A pattern match is a review
+candidate, not a confirmed exploit. Contextual decisions must not silently exempt
+whole test/config files.
 
-**Health check:**
-\`\`\`bash
-# Commands to verify deployment
-\`\`\`
+Deployment additions belong in the platform decision workflow: exact identity,
+environment/revision, reviewed preview/plan, health checks, data compatibility and
+specifically authorized recovery. Do not add universal deploy/rollback recipes,
+first-match platform inference, pruning, stack deletion, or user-work stashing.
+Test with mocks or isolated disposable fixtures, never live infrastructure.
 
-**Common failures:**
-- Failure scenario → fix
-```
+## Evaluation changes
 
-3. Add detection logic to the Detection Logic section (order matters — first match wins)
-4. Add detection to `skills/sdlc-autopilot/scripts/detect-toolchain.sh`
+Add realistic prompts and human criteria to `evals/evals.json`, aligned with the
+actual fixture and the current skill. Evaluate outcomes rather than a mandatory
+implementation or phrase. Avoid requiring unrelated fixes or implicit external
+review. Add evaluator-owned semantic oracles where practical and exercise their
+before/after and setup-failure behavior.
 
-## How to Add Audit Patterns
+External dependencies belong in the exact-pinned `evals/runtime/package.json` and
+checked-in lockfile, not independently unlocked fixture manifests. Runtime setup
+is separate from replay and disables lifecycle scripts. See README for supported
+Node versions and preparation commands.
 
-1. Edit `skills/sdlc-autopilot/references/deep-audit.md`
-2. Add grep patterns to the relevant OWASP category, or create a new section
-3. For each pattern, include:
-   - The grep pattern to find the vulnerability
-   - What to verify when found
-   - The guardrail to add
+Keep these evidence types separate:
 
-## How to Add Guardrail Patterns
+- Structure: `sh scripts/run-evals.sh` validates scenario/package references.
+- Execution: Python/Node regressions, fixture baselines and oracle controls.
+- Replay: `run-agent-evals.py` validates supplied artifacts by default;
+  `--execute` runs trusted supplied code in disposable directories, not an OS sandbox.
+- Human judgment: prose criteria remain pending until actually reviewed.
 
-1. Edit `skills/sdlc-autopilot/references/deep-audit.md`, Section 2 (Guardrail Pattern Library)
-2. Follow this template:
+Run metadata must match the closed schema. The harness generates provenance;
+self-reported flags, identity, transcripts and summary wording are not execution
+proof. Never infer a live-agent pass rate or speed gain from structure checks,
+hand-written control patches, or one local review.
 
-```markdown
-### Pattern Name
-\`\`\`language
-// GUARD: Description of what this prevents
-function guardName(...) { ... }
+## Local verification
 
-// TEST: Verify the guardrail catches the dangerous pattern
-test('description', () => { ... });
-\`\`\`
-```
+Use the commands in README for runtime/package tests and locked fixture/oracle
+checks. `python3 scripts/compare-verifiers.py` reproduces selected behaviors against
+the original audited commit; this is a controlled helper comparison, not an agent
+benchmark. Update the evidence contract and examples when behavior changes. Report
+checks actually run, failures, unsupported areas and consequential residual risk.
+No push, release, installed-copy update or deployment is implied by contributing.
 
-Every guardrail pattern MUST include a paired test.
-
-## How to Add Evaluation Scenarios
-
-1. Edit `evals/evals.json` — add a new entry with:
-   - `id`: next sequential number
-   - `name`: kebab-case descriptive name
-   - `prompt`: the user prompt to evaluate
-   - `fixture`: path to fixture directory (optional)
-   - `expected_mode`: quick | standard | full
-   - `assertions`: list of human-verifiable criteria (checked manually, not automated)
-
-2. Create a fixture in `evals/fixtures/<id>-<name>/`:
-   - 5-10 files max
-   - Include the bug/issue the test is evaluating
-   - Include enough context for realistic behavior
-   - For tests that verify audit findings, include hidden issues in adjacent code
-
-## Development Principles
-
-- **`skills/sdlc-autopilot/SKILL.md` stays under 340 lines.** If you need to add content, find something to cut.
-- **Reference files are loaded conditionally.** Don't add content to `SKILL.md` that's only needed in one mode.
-- **Every guardrail has a test.** No exceptions.
-- **Token efficiency matters.** Every line earns its keep.
-- **Proportionality is key.** Don't gold-plate cosmetic findings. Don't skip security guards.
-
-## Testing Changes
-
-### Structural validation (automated)
-
-Run `sh scripts/run-evals.sh` — validates fixture directories exist, JSON is well-formed, and source files are present. This checks the eval suite itself, not the skill.
-
-### Skill evaluation (manual)
-
-Assertions in `evals.json` are human-verifiable criteria, not automated tests. To evaluate the skill:
-
-1. For each scenario in `evals.json`, create a new conversation with the agent
-2. Set the working directory to the corresponding fixture
-3. Provide the scenario prompt
-4. Manually verify each assertion
-
-Focus on:
-- Mode selection correctness
-- Fix-guard-test-verify loop execution for audit findings
-- Guardrail proportionality
-- Root cause pattern scanning
-- Circuit breaker activation
-- Logging proportionality (trivial vs non-trivial)
-
-### Machine-checkable agent evals (artifact-based)
-
-The repo also supports an artifact-based harness:
-
-1. Create a run artifact directory per eval, for example `eval-runs/2-simple-bug-fix/`
-2. Include:
-   - `meta.json` matching `evals/agent-run.schema.json`
-   - `patch.diff` containing the agent's patch for the fixture
-   - `transcript.md` if you want transcript-based machine checks
-3. Run `python3 scripts/run-agent-evals.py --runs-dir eval-runs`
-
-The harness copies the fixture to a temp workspace, initializes git, applies the patch, runs `verify-pipeline.sh`, and evaluates any `machine_checks` declared in `evals/evals.json`.
-
-For public multi-agent claims, include these optional `meta.json` fields whenever possible: `agent_name`, `agent_version`, `agent_surface`, `run_at`, and `skill_version_ref`. Do not publish pass-rate claims for an agent unless the corresponding run artifacts are reproducible through this harness.
+Public package changes also need the locked native-runner, standalone installer
+and maintained-scanner controls listed in README. Keep the bundled MIT notice
+identical to the canonical root license. Record model-host compatibility separately
+from actual agent effectiveness; update release-readiness evidence without rewriting
+historical observations as if earlier audits already had the new capabilities.

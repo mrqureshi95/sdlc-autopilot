@@ -4,6 +4,7 @@ global.fetch = jest.fn();
 
 afterEach(() => {
   jest.resetAllMocks();
+  jest.useRealTimers();
 });
 
 test("returns parsed JSON on success", async () => {

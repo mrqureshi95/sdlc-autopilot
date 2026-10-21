@@ -1,263 +1,240 @@
 #!/usr/bin/env python3
-"""Machine-checkable harness for SDLC Autopilot agent eval runs.
+"""Replay supplied patches, not an autonomous agent campaign.
 
-Expected run artifact layout:
-
-  <runs-dir>/
-    2-simple-bug-fix/
-      meta.json
-      patch.diff
-      transcript.md  # optional
-
-Core behavior:
-- Copies the fixture to a temporary workspace
-- Initializes git and commits the base fixture
-- Copies verifier scripts into the temp workspace
-- Optionally installs JS deps for npm fixtures
-- Applies the agent patch
-- Runs verify-pipeline.sh using the mode declared in meta.json
-- Evaluates optional machine_checks declared in evals.json
-
-This does not prove every assertion, but it upgrades evals from pure fixture
-validation to repeatable, machine-checked artifact evaluation.
+Default is read-only artifact validation. --execute opts into running supplied code
+in disposable directories; that is NOT an OS sandbox. Use trusted local patches
+or an external no-network/no-credentials sandbox for adversarial code.
 """
-
 from __future__ import annotations
-
 import argparse
+import datetime as dt
+import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
+import platform
+import secrets
 import shutil
-import subprocess
 import sys
 import tempfile
-from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+_spec = importlib.util.spec_from_file_location('sdlc_evidence', ROOT/'skills/sdlc-autopilot/scripts/evidence.py')
+evidence = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(evidence)
 
 
-MODE_VALUES = {"quick", "standard", "full"}
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def run(cmd: list[str], cwd: Path, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, cwd=str(cwd), env=env, text=True, capture_output=True)
+def tree_sha(root):
+    return hashlib.sha256(json.dumps({str(p.relative_to(root)):sha(p) for p in sorted(root.rglob('*'))
+                                    if p.is_file() and not p.is_symlink() and not any(part in ['__pycache__','.git','node_modules'] for part in p.relative_to(root).parts) and p.suffix != '.pyc'},sort_keys=True).encode()).hexdigest()
 
 
-def load_json(path: Path) -> Any:
-    with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+def load_json(path):
+    return json.loads(Path(path).read_text())
 
 
-def find_run_dir(runs_dir: Path, eval_case: dict[str, Any]) -> Path | None:
-    candidates = [
-        runs_dir / f"{eval_case['id']}-{eval_case['name']}",
-        runs_dir / str(eval_case["id"]),
-        runs_dir / eval_case["name"],
-    ]
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return None
-
-
-def ensure_git_repo(workdir: Path) -> None:
-    run(["git", "init", "-q"], cwd=workdir)
-    run(["git", "config", "user.email", "evals@sdlc-autopilot.local"], cwd=workdir)
-    run(["git", "config", "user.name", "SDLC Eval Harness"], cwd=workdir)
-    run(["git", "add", "."], cwd=workdir)
-    commit = run(["git", "commit", "-q", "-m", "base fixture"], cwd=workdir)
-    if commit.returncode != 0:
-        raise RuntimeError(commit.stderr or commit.stdout or "failed to create base fixture commit")
-
-
-def prepare_workspace(repo_root: Path, fixture_dir: Path) -> Path:
-    temp_dir = Path(tempfile.mkdtemp(prefix="sdlc-agent-eval-"))
-    workdir = temp_dir / "workspace"
-    shutil.copytree(fixture_dir, workdir)
-
-    scripts_dir = workdir / "scripts"
-    scripts_dir.mkdir(exist_ok=True)
-    runtime_scripts_dir = repo_root / "skills" / "sdlc-autopilot" / "scripts"
-    for script_name in ("verify-pipeline.sh", "verify-inversion.sh"):
-        shutil.copy2(runtime_scripts_dir / script_name, scripts_dir / script_name)
-
-    ensure_git_repo(workdir)
-    maybe_install_dependencies(workdir)
-    return workdir
-
-
-def maybe_install_dependencies(workdir: Path) -> None:
-    package_json = workdir / "package.json"
-    if package_json.exists():
-        install = run(["npm", "install", "--no-fund", "--no-audit"], cwd=workdir)
-        if install.returncode != 0:
-            raise RuntimeError(install.stderr or install.stdout or "npm install failed")
-
-
-def apply_patch_file(workdir: Path, patch_path: Path) -> None:
-    applied = run(["git", "apply", "--whitespace=nowarn", str(patch_path)], cwd=workdir)
-    if applied.returncode != 0:
-        raise RuntimeError(applied.stderr or applied.stdout or "failed to apply patch")
-
-
-def validate_meta(eval_case: dict[str, Any], meta: dict[str, Any]) -> list[str]:
-    errors: list[str] = []
-    if meta.get("eval_id") != eval_case["id"]:
-        errors.append(f"meta.eval_id={meta.get('eval_id')} does not match eval id {eval_case['id']}")
-    if meta.get("mode") not in MODE_VALUES:
-        errors.append(f"meta.mode must be one of {sorted(MODE_VALUES)}")
-    elif meta["mode"] != eval_case["expected_mode"]:
-        errors.append(f"meta.mode={meta['mode']} does not match expected_mode={eval_case['expected_mode']}")
+def validate_schema(data, schema):
+    """Enforce the small closed metadata schema; fail on unsupported constraints."""
+    supported={'$schema','title','type','required','properties','additionalProperties','minimum','minLength','enum'}
+    if set(schema)-supported:
+        return ['unsupported schema constraint']
+    types={'object':dict,'string':str,'integer':int}
+    if schema.get('type') not in types or type(data) is not types[schema['type']]:
+        return ['invalid field type']
+    errors=[]
+    if isinstance(data,dict):
+        errors += ['missing '+k for k in schema.get('required',[]) if k not in data]
+        properties=schema.get('properties',{})
+        if schema.get('additionalProperties') is False:
+            errors += ['unexpected '+k for k in data if k not in properties]
+        for k in data.keys() & properties.keys():
+            errors += [k+': '+e for e in validate_schema(data[k],properties[k])]
+    if 'enum' in schema and data not in schema['enum']:
+        errors.append('not in enum')
+    if 'minimum' in schema and data<schema['minimum']:
+        errors.append('below minimum')
+    if 'minLength' in schema and len(data.strip())<schema['minLength']:
+        errors.append('empty string')
     return errors
 
 
-def execute_machine_check(check: dict[str, Any], meta: dict[str, Any], transcript: str, diff_text: str, changed_files: set[str]) -> tuple[bool, str]:
-    check_type = check.get("type")
-    if check_type == "meta_flag":
-        flag = check["value"]
-        flags = set(meta.get("flags", []))
-        return (flag in flags, f"meta flag '{flag}' {'present' if flag in flags else 'missing'}")
-    if check_type == "meta_summary_contains":
-        value = check["value"]
-        summary = meta.get("summary", "")
-        return (value in summary, f"summary contains '{value}'" if value in summary else f"summary missing '{value}'")
-    if check_type == "transcript_contains":
-        value = check["value"]
-        return (value in transcript, f"transcript contains '{value}'" if value in transcript else f"transcript missing '{value}'")
-    if check_type == "diff_contains":
-        value = check["value"]
-        return (value in diff_text, f"diff contains '{value}'" if value in diff_text else f"diff missing '{value}'")
-    if check_type == "diff_not_contains":
-        value = check["value"]
-        return (value not in diff_text, f"diff omits '{value}'" if value not in diff_text else f"diff unexpectedly contains '{value}'")
-    if check_type == "changed_file_contains":
-        value = check["value"]
-        matched = any(value in item for item in changed_files)
-        return (matched, f"changed file contains '{value}'" if matched else f"no changed file contains '{value}'")
-    if check_type == "verify_output_contains":
-        value = check["value"]
-        verify_output = meta.get("verify_output", "")
-        return (value in verify_output, f"verify output contains '{value}'" if value in verify_output else f"verify output missing '{value}'")
-    if check_type == "transcript_not_contains":
-        value = check["value"]
-        return (value not in transcript, f"transcript omits '{value}'" if value not in transcript else f"transcript unexpectedly contains '{value}'")
-    if check_type == "file_contains":
-        relative_path = check["path"]
-        value = check["value"]
-        content = meta.get("workspace_files", {}).get(relative_path, "")
-        return (value in content, f"{relative_path} contains '{value}'" if value in content else f"{relative_path} missing '{value}'")
-    return (False, f"unsupported machine check type '{check_type}'")
+def validate_meta(case, meta):
+    errors=validate_schema(meta, load_json(ROOT/'evals/agent-run.schema.json'))
+    if isinstance(meta,dict):
+        if meta.get('eval_id')!=case['id']:
+            errors.append('eval_id mismatch')
+        if meta.get('mode')!=case['expected_mode']:
+            errors.append('mode differs from scenario expectation; human review may assess rationale')
+    return errors
 
 
-def evaluate_case(repo_root: Path, eval_case: dict[str, Any], run_dir: Path) -> dict[str, Any]:
-    meta_path = run_dir / "meta.json"
-    patch_path = run_dir / "patch.diff"
-    transcript_path = run_dir / "transcript.md"
+def transcript_check(check, transcript):
+    if not transcript or not transcript.strip():
+        return 'inconclusive','Transcript absent; absence of forbidden text is not evidence'
+    present=check['value'].casefold() in transcript.casefold()
+    passes=not present if check['type']=='transcript_not_contains' else present
+    return ('pass' if passes else 'fail'), 'Text-presence check only, not behavioral evidence'
 
-    result: dict[str, Any] = {
-        "id": eval_case["id"],
-        "name": eval_case["name"],
-        "status": "failed",
-        "errors": [],
-        "checks": [],
-    }
 
-    if not meta_path.exists():
-      result["errors"].append("meta.json missing")
-      return result
-    if not patch_path.exists():
-      result["errors"].append("patch.diff missing")
-      return result
+def command(argv,cwd,timeout):
+    # Remove provider/cloud credentials and isolate HOME. This is hygiene, not a sandbox.
+    safe_env={k:v for k,v in os.environ.items() if k in ['PATH','SYSTEMROOT','TMPDIR','LANG']}
+    safe_env.update(HOME=str(cwd), CI='1', GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull,
+                    GIT_TERMINAL_PROMPT='0', PYTHONDONTWRITEBYTECODE='1')
+    return evidence.execute(argv,cwd,timeout,env=safe_env)
 
-    meta = load_json(meta_path)
-    result["meta"] = meta
-    result["errors"].extend(validate_meta(eval_case, meta))
-    if result["errors"]:
-        return result
 
-    fixture_dir = repo_root / "evals" / eval_case["fixture"]
+def observed(r):
+    return {k:v for k,v in r.items() if k not in ['stdout','stderr']} | {
+        'output_sha256':hashlib.sha256((r['stdout']+r['stderr']).encode()).hexdigest()}
+
+
+def validate_workspace(work):
+    for p in work.rglob('*'):
+        if p.is_symlink():
+            raise ValueError('Symlinks in supplied workspace are not accepted')
+        if p.name=='.git' and p!=work/'.git':
+            raise ValueError('Nested repositories are not accepted')
+
+
+def git(work,*args):
+    r=command(['git',*args],work,30)
+    if r['returncode']!=0 or r.get('error'):
+        raise ValueError('Git operation failed: '+' '.join(args[:2]))
+    return r['stdout'].rstrip('\n')
+
+
+def validate_runtime(runtime):
+    if runtime is None:
+        return False
     try:
-        workdir = prepare_workspace(repo_root, fixture_dir)
-        apply_patch_file(workdir, patch_path)
-    except Exception as exc:  # noqa: BLE001
-        result["errors"].append(str(exc))
+        return (runtime/'node_modules/vitest/vitest.mjs').is_file() and sha(runtime/'package-lock.json')==sha(ROOT/'evals/runtime/package-lock.json')
+    except OSError:
+        return False
+
+
+def run_oracle(repo_root, work, name, runtime, timeout):
+    if name not in ['pagination','sql','health','validation','validation-strict']:
+        return {'name':name,'state':'inconclusive','reason':'No semantic oracle implemented'}
+    if name!='pagination' and not validate_runtime(runtime):
+        return {'name':name,'state':'inconclusive','reason':'Prepared locked runtime required'}
+    oracle=repo_root/'evals/oracles'/('pagination.py' if name=='pagination' else 'api.cjs')
+    with tempfile.TemporaryDirectory(prefix='sdlc completion ') as temp:
+        completion=Path(temp)/'completion.json'
+        nonce=secrets.token_hex(24)
+        argv=([sys.executable,str(oracle),str(work),str(completion),nonce] if name=='pagination'
+              else ['node',str(oracle),str(work),name,str(completion),nonce])
+        r=command(argv,work,timeout)
+        state='inconclusive'
+        completion_hash=None
+        if not r.get('error') and completion.is_file() and not completion.is_symlink() and completion.stat().st_size<4096:
+            try:
+                facts=load_json(completion)
+                claimed=facts.get('state')
+                if (facts.get('version')==1 and facts.get('oracle')==name and facts.get('nonce')==nonce
+                        and claimed in ['pass','fail','inconclusive']
+                        and r['returncode']=={'pass':0,'fail':1,'inconclusive':2}[claimed]):
+                    state=claimed
+                    completion_hash=sha(completion)
+            except (ValueError,AttributeError):
+                pass
+        return {'name':name,'state':state,'oracle_sha256':sha(oracle),
+                'completion_sha256':completion_hash,
+                'trust':'Trusted-patch replay only; completion shares the evaluated process and is not malicious-code attestation',
+                **observed(r)}
+
+
+def evaluate_case(repo_root, case, run_dir, execute=False, runtime=None, timeout=60):
+    result={'id':case['id'],'name':case['name'],'status':'inconclusive','errors':[],
+            'semantic':[],'text_checks':[], 'human_judgment':{'state':'pending','criteria':case.get('assertions',[])}}
+    meta_path=run_dir/'meta.json'; patch=run_dir/'patch.diff'; transcript=run_dir/'transcript.md'
+    result['provenance']={'generated_by':'sdlc replay harness v2','started_at':dt.datetime.now(dt.timezone.utc).isoformat(),
+                          'python':platform.python_version(),'platform':platform.platform(),
+                          'skill_tree_sha256':tree_sha(repo_root/'skills/sdlc-autopilot'),
+                          'harness_sha256':sha(Path(__file__)), 'schema_sha256':sha(repo_root/'evals/agent-run.schema.json')}
+    try:
+        if not meta_path.is_file() or not patch.is_file():
+            raise ValueError('meta.json and patch.diff are required')
+        if max(meta_path.stat().st_size,patch.stat().st_size)>2*1024*1024:
+            raise ValueError('Artifact size limit exceeded')
+        result['errors']+=validate_meta(case,load_json(meta_path))
+        result['provenance'].update(patch_sha256=sha(patch),metadata_sha256=sha(meta_path),
+                                    transcript_sha256=sha(transcript) if transcript.is_file() else None)
+        if result['errors']:
+            result['status']='fail';return result
+        for c in case.get('text_checks',[]):
+            state,reason=transcript_check(c,transcript.read_text() if transcript.is_file() else None)
+            result['text_checks'].append({'state':state,'reason':reason})
+        fixture=repo_root/'evals'/case['fixture']
+        result['provenance']['fixture_sha256']=tree_sha(fixture)
+        if not execute:
+            result['reason']='Artifact structure only; --execute required for semantic replay'
+            return result
+        with tempfile.TemporaryDirectory(prefix='sdlc replay ') as temp:
+            work=Path(temp)/'workspace'
+            shutil.copytree(fixture,work)
+            validate_workspace(work)
+            # Infrastructure is installed/ignored before the baseline. No npm install here.
+            (work/'.gitignore').write_text('node_modules/\n.eval-runtime/\n*.db\n__pycache__/\n')
+            git(work,'init','-q','-b','main');git(work,'config','user.email','eval@example.invalid')
+            git(work,'config','user.name','SDLC Harness');git(work,'add','.')
+            git(work,'commit','-qm','fixture baseline')
+            base=git(work,'rev-parse','HEAD')
+            result['provenance'].update(workspace=str(work),base=base)
+            if patch.stat().st_size:
+                git(work,'apply','--check',str(patch.resolve()))
+                git(work,'apply','--whitespace=nowarn',str(patch.resolve()))
+            validate_workspace(work)
+            # Link trusted runtime only after rejecting patch-created symlinks.
+            if validate_runtime(runtime):
+                (work/'node_modules').symlink_to(runtime/'node_modules',target_is_directory=True)
+                (work/'.eval-runtime').symlink_to(runtime,target_is_directory=True)
+                # Workspace dependency for the planted monorepo import defect.
+                shared=work/'packages/shared'
+                if shared.is_dir():
+                    scope=work/'packages/dashboard/node_modules/@monorepo'
+                    scope.mkdir(parents=True)
+                    (scope/'shared').symlink_to(shared,target_is_directory=True)
+                result['provenance']['runtime_lock_sha256']=sha(runtime/'package-lock.json')
+            result['provenance']['changed_paths']=[c['path'] for c in evidence.change_list(work,base)]
+            result['provenance']['node_version']=command(['node','--version'],work,10)['stdout'].strip()
+            for name in case.get('oracles',[]):
+                result['semantic'].append(run_oracle(repo_root,work,name,runtime,timeout))
+            if not result['semantic']:
+                result['semantic'].append({'state':'inconclusive','reason':'Scenario requires human evaluation; no semantic oracle'})
+            states=[c['state'] for c in result['semantic']+result['text_checks']]
+            result['status']='fail' if 'fail' in states else 'inconclusive' if 'inconclusive' in states else 'executable-pass'
+            # This status never clears the separate pending human judgments.
         return result
-
-    env = os.environ.copy()
-    if meta.get("strict_inversion"):
-        env["SDLC_STRICT_INVERSION"] = "1"
-    if meta.get("inversion_base_ref"):
-        env["SDLC_INVERSION_BASE_REF"] = str(meta["inversion_base_ref"])
-
-    verify = run(["sh", "scripts/verify-pipeline.sh", meta["mode"]], cwd=workdir, env=env)
-    result["verify_returncode"] = verify.returncode
-    result["verify_output"] = (verify.stdout + verify.stderr).strip()
-    meta["verify_output"] = result["verify_output"]
-    if verify.returncode != 0:
-        result["errors"].append("verify-pipeline.sh failed")
-
-    transcript = transcript_path.read_text(encoding="utf-8") if transcript_path.exists() else ""
-    diff_text = patch_path.read_text(encoding="utf-8")
-    changed_files = {
-        line.split()[-1].removeprefix("b/")
-        for line in diff_text.splitlines()
-        if line.startswith("diff --git ")
-    }
-    meta["workspace_files"] = {}
-    for changed_file in changed_files:
-        file_path = workdir / changed_file
-        if file_path.exists() and file_path.is_file():
-            meta["workspace_files"][changed_file] = file_path.read_text(encoding="utf-8")
-
-    for check in eval_case.get("machine_checks", []):
-        passed, message = execute_machine_check(check, meta, transcript, diff_text, changed_files)
-        result["checks"].append({"check": check, "passed": passed, "message": message})
-        if not passed:
-            result["errors"].append(message)
-
-    if not result["errors"]:
-        result["status"] = "passed"
-    return result
+    except (ValueError,OSError,KeyError,TypeError) as exc:
+        result['errors'].append(str(exc));result['status']='fail';return result
+    finally:
+        result['provenance']['finished_at']=dt.datetime.now(dt.timezone.utc).isoformat()
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Run machine-checkable SDLC agent evals")
-    parser.add_argument("--runs-dir", required=True, help="Directory containing agent run artifacts")
-    parser.add_argument("--eval-id", type=int, help="Run only one eval id")
-    args = parser.parse_args()
-
-    repo_root = Path(__file__).resolve().parents[1]
-    runs_dir = Path(args.runs_dir).resolve()
-    evals = load_json(repo_root / "evals" / "evals.json")["evals"]
-
-    selected = [case for case in evals if args.eval_id is None or case["id"] == args.eval_id]
-    if not selected:
-        print("No matching evals selected", file=sys.stderr)
-        return 2
-
-    summary: dict[str, Any] = {"passed": 0, "failed": 0, "results": []}
-
-    for eval_case in selected:
-        run_dir = find_run_dir(runs_dir, eval_case)
-        if run_dir is None:
-            summary["failed"] += 1
-            summary["results"].append(
-                {
-                    "id": eval_case["id"],
-                    "name": eval_case["name"],
-                    "status": "failed",
-                    "errors": ["run artifact directory not found"],
-                    "checks": [],
-                }
-            )
-            continue
-
-        result = evaluate_case(repo_root, eval_case, run_dir)
-        summary["results"].append(result)
-        summary[result["status"]] += 1
-
-    print(json.dumps(summary, indent=2))
-    return 0 if summary["failed"] == 0 else 1
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--runs-dir',type=Path,required=True);p.add_argument('--eval-id',type=int)
+    p.add_argument('--execute',action='store_true');p.add_argument('--runtime-dir',type=Path)
+    p.add_argument('--timeout',type=float,default=60)
+    args=p.parse_args()
+    if not 0<args.timeout<=3600:
+        p.error('timeout must be positive and at most 3600 seconds')
+    cases=[c for c in load_json(ROOT/'evals/evals.json')['evals'] if args.eval_id is None or c['id']==args.eval_id]
+    if not cases:p.error('No matching evals')
+    results=[]
+    for case in cases:
+        candidates=[args.runs_dir/f"{case['id']}-{case['name']}",args.runs_dir/str(case['id']),args.runs_dir/case['name']]
+        run_dir=next((x for x in candidates if x.is_dir()),candidates[0])
+        results.append(evaluate_case(ROOT,case,run_dir,args.execute,args.runtime_dir,args.timeout))
+    print(json.dumps({'evidence_type':'artifact replay; no agent behavior pass rate','results':results},indent=2))
+    return 1 if any(r['status']=='fail' for r in results) else 2 if any(r['status']=='inconclusive' for r in results) else 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+if __name__=='__main__':
+    sys.exit(main())

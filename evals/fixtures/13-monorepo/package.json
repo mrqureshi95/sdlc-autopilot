@@ -2,8 +2,10 @@
   "name": "13-monorepo",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "test": "echo 'Use workspace-specific test commands'"
+    "test": "node node_modules/vitest/vitest.mjs run --config .eval-runtime/vitest.config.mjs"
   }
 }

@@ -1,55 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://sdlc-autopilot.local/evals/agent-run.schema.json",
-  "title": "SDLC Autopilot Agent Run Artifact",
+  "title": "Agent-supplied replay metadata (not execution proof)",
   "type": "object",
-  "required": ["eval_id", "mode", "summary"],
+  "required": ["eval_id", "mode", "summary", "agent_name"],
   "properties": {
-    "eval_id": {
-      "type": "integer",
-      "minimum": 1
-    },
-    "mode": {
-      "type": "string",
-      "enum": ["quick", "standard", "full"]
-    },
-    "summary": {
-      "type": "string",
-      "minLength": 1
-    },
-    "agent_name": {
-      "type": "string",
-      "description": "Agent or tool surface that produced the run, for example Codex, Claude Code, Cursor, or GitHub Copilot."
-    },
-    "agent_version": {
-      "type": "string",
-      "description": "Version, model, or build identifier when available."
-    },
-    "agent_surface": {
-      "type": "string",
-      "description": "Execution surface, for example terminal agent, IDE agent mode, chat-only, or CI."
-    },
-    "run_at": {
-      "type": "string",
-      "description": "ISO 8601 timestamp for the run when available."
-    },
-    "skill_version_ref": {
-      "type": "string",
-      "description": "Git commit, tag, or branch of the skill used for the run."
-    },
-    "flags": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "uniqueItems": true
-    },
-    "strict_inversion": {
-      "type": "boolean"
-    },
-    "inversion_base_ref": {
-      "type": "string"
-    }
+    "eval_id": {"type": "integer", "minimum": 1},
+    "mode": {"type": "string", "enum": ["quick", "standard", "full"]},
+    "summary": {"type": "string", "minLength": 1},
+    "agent_name": {"type": "string", "minLength": 1},
+    "agent_version": {"type": "string", "minLength": 1},
+    "agent_surface": {"type": "string", "minLength": 1}
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }
