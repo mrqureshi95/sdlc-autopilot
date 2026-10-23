@@ -11,7 +11,7 @@
       "status": "passed",
       "exit_code": 0,
       "tests": 1,
-      "evidence": "/tmp/example-parallel-delivery/feature-a/.parallel-output/behavior.json",
+      "evidence": "/tmp/example-parallel-delivery/feature-a/.delivery-local/behavior.json",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
@@ -19,7 +19,7 @@
       "kind": "type",
       "status": "passed",
       "exit_code": 0,
-      "evidence": "/tmp/example-parallel-delivery/feature-a/.parallel-output/types.txt",
+      "evidence": "/tmp/example-parallel-delivery/feature-a/.delivery-local/types.txt",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     }
   ],

@@ -13,7 +13,8 @@ only; do not execute repository code unless separately authorized and safely
 isolated. Instructions alone do not enforce read-only access: the host must apply
 the intended sandbox and filesystem permissions.
 A structurally valid handoff, test count or exit-zero helper does not prove the
-commands ran, checks were adequate, CI was enforced or code is secure. Report
+commands ran, checks were adequate, CI was enforced or code is secure. Independent
+review cannot guarantee correctness or security. Report
 missing evidence, actual failures and qualification limits explicitly. Preserve
 physical-device/provider/human-review requirements. No external-provider dispatch,
 publication, merge or deployment without the corresponding authorization.

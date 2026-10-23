@@ -24,12 +24,15 @@ populated with real bindings and `check-plan --live` passes. Version 1 records:
 - `shared_paths`: repository-relative paths reserved for the integrator.
 - `tasks`: one or two tasks with unique `id`, disjoint `owned_paths`, an absolute
   `worktree`, `branch`, distinct `ports`, unique `database` namespace, absolute
-  `output_dir` inside that worktree, and named `required_checks`.
+  `output_dir` inside that worktree, and `required_checks` objects with fixed
+  `name` and `kind` (for example `{"name":"behavior","kind":"test"}`).
 
 Use repository-relative file/directory prefixes for ownership. Directory prefixes
 include descendants. The assignment must also name expected outcomes, inspected
 check commands and their scope; check names alone are not commands. Neither the
 plan nor its checker launches agents, provisions databases, or executes tests.
+Handoff check names and kinds must match the plan; do not relabel a required test
+as lint or another kind to evade its positive execution count.
 
 Create each worktree from the recorded base after preserving user work. Separate
 database/schema names, local services, ports, generated reports, and temporary
@@ -37,6 +40,37 @@ outputs; worktrees alone do not isolate these. Validate live worktree/base/branc
 bindings before dispatch. Keep credentials and production/deployment authority
 outside worker access using actual host permissions; worktrees are not security
 sandboxes. A shared local runtime needs an explicit owner and safe allocation.
+Use canonical absolute paths from `pwd -P`/path resolution consistently, including
+platform aliases such as `/tmp` versus `/private/tmp`.
+
+Before dispatch, the integrator provisions `.delivery-local/` separately inside
+each worker for its `output_dir`. Exclude only this local output directory so
+reports do not make an otherwise committed candidate dirty. Run setup serially;
+linked worktrees may share Git's `info/exclude`. Append the exact pattern if absent,
+preserving all existing entries; do not replace that file or edit shared tracked
+`.gitignore` policy:
+
+```sh
+WORKTREE=/absolute/canonical/worker-path
+WORKER_EXCLUDE=$(git -C "$WORKTREE" rev-parse --path-format=absolute --git-path info/exclude)
+python3 - "$WORKTREE" "$WORKER_EXCLUDE" <<'PY'
+import pathlib, sys
+worker, exclude = map(pathlib.Path, sys.argv[1:])
+exclude.parent.mkdir(parents=True, exist_ok=True)
+pattern = "/.delivery-local/"
+existing = exclude.read_text() if exclude.exists() else ""
+if pattern not in existing.splitlines():
+    with exclude.open("a") as handle:
+        handle.write("\n" + pattern + "\n")
+(worker / ".delivery-local").mkdir(mode=0o700, exist_ok=True)
+PY
+git -C "$WORKTREE" check-ignore --quiet .delivery-local/
+```
+
+This intentional local exclusion is for generated output only; it is not a secret
+store or an ownership bypass. Retain and inspect the referenced evidence through
+integration; publish selected reviewed evidence through the project's artifact
+process when authorized. Do not broaden exclusions to hide source drift.
 
 ```sh
 python3 "$SDLC_SKILL_DIR/scripts/parallel_delivery.py" check-plan --plan PLAN.json --repo REPO
@@ -63,7 +97,8 @@ python3 "$SDLC_SKILL_DIR/scripts/parallel_delivery.py" check-plan --plan PLAN.js
 3. **Review:** a fresh reviewer inspects the actual candidate diff against the
    agreed base, requirements and raw results. It checks missing boundaries,
    ownership drift, altered tests/controls, and dependencies rather than trusting
-   the builder's summary. Fixes return to the builder; the reviewer does not approve
+   the builder's summary. Independent review reduces mistakes but cannot guarantee
+   correctness or security. Fixes return to the builder; the reviewer does not approve
    its own implementation. Host permissions must enforce any read-only sandbox:
    reviewer instructions alone cannot. External-provider review needs authorized
    destination and payload scope; model availability grants no consent.

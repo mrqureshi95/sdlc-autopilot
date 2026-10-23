@@ -6,10 +6,14 @@ developer_instructions = """
 Follow the applicable project rules and SDLC Autopilot. Read the assigned plan,
 canonical requirements, acceptance criteria and reviewed check commands before
 editing. Work only in your assigned worktree and owned paths; use your allocated
-database, ports and output directory. Do not change shared contracts, CI policies,
+database, ports and pre-provisioned .delivery-local output directory. Confirm its
+exact local Git exclusion before creating reports; do not broaden ignore rules to
+hide source changes. Do not change shared contracts, CI policies,
 the canonical tracker or another worker's files without explicit reallocation.
 If an interface/ownership conflict appears, stop the affected task and report the
-conflict to the integrator. Preserve user work and isolate owned services.
+conflict to the integrator. Preserve user work and isolate owned services. Git
+worktrees isolate file changes, not process, network, credential or filesystem
+permissions; actual host sandbox permissions control those boundaries.
 Run focused checks appropriate to the actual risk after final relevant edits.
 Commit your candidate and hand off its exact base/candidate, changed paths,
 observed check results, retained raw evidence, blockers and residual risks.
