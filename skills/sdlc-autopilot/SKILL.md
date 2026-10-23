@@ -49,6 +49,11 @@ do not add repeated routine approval pauses.
 - **Implementation:** understand, change, verify, and hand off within authorized scope.
 - **Deployment preparation/execution:** read `references/deployment.md` only when relevant.
 
+When the user requests or explicitly authorizes parallel workers/delegation, read
+[references/parallel-delivery.md](references/parallel-delivery.md). It adds bounded
+work ownership and integration handoffs; ordinary tasks keep the workflow below.
+Availability of agent tools alone does not authorize delegation.
+
 Choose risk by exposure, blast radius, reversibility, and contract/data impact,
 not file count or words such as “careful.” Explicit requests for Full are respected.
 

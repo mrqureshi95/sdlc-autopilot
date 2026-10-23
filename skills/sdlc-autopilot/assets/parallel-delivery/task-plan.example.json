@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "base": "0000000000000000000000000000000000000000",
+  "gate": "example-only-replace-with-canonical-gate",
+  "shared_paths": [
+    ".github",
+    "database",
+    "packages/contracts",
+    "planning"
+  ],
+  "tasks": [
+    {
+      "id": "feature-a",
+      "owned_paths": [
+        "packages/feature-a",
+        "tests/feature-a"
+      ],
+      "worktree": "/tmp/example-parallel-delivery/feature-a",
+      "branch": "codex/example-feature-a",
+      "ports": [
+        43101
+      ],
+      "database": "example_feature_a",
+      "output_dir": "/tmp/example-parallel-delivery/feature-a/.delivery-local",
+      "required_checks": [
+        {
+          "name": "behavior",
+          "kind": "test"
+        },
+        {
+          "name": "types",
+          "kind": "type"
+        }
+      ]
+    },
+    {
+      "id": "feature-b",
+      "owned_paths": [
+        "packages/feature-b",
+        "tests/feature-b"
+      ],
+      "worktree": "/tmp/example-parallel-delivery/feature-b",
+      "branch": "codex/example-feature-b",
+      "ports": [
+        43102
+      ],
+      "database": "example_feature_b",
+      "output_dir": "/tmp/example-parallel-delivery/feature-b/.delivery-local",
+      "required_checks": [
+        {
+          "name": "behavior",
+          "kind": "test"
+        },
+        {
+          "name": "types",
+          "kind": "type"
+        }
+      ]
+    }
+  ]
+}

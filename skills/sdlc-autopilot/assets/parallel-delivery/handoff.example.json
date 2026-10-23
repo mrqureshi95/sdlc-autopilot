@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "task": "feature-a",
+  "base": "0000000000000000000000000000000000000000",
+  "candidate": "0000000000000000000000000000000000000000",
+  "status": "ready",
+  "checks": [
+    {
+      "name": "behavior",
+      "kind": "test",
+      "status": "passed",
+      "exit_code": 0,
+      "tests": 1,
+      "evidence": "/tmp/example-parallel-delivery/feature-a/.delivery-local/behavior.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "types",
+      "kind": "type",
+      "status": "passed",
+      "exit_code": 0,
+      "evidence": "/tmp/example-parallel-delivery/feature-a/.delivery-local/types.txt",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "blockers": [],
+  "risks": [
+    "ILLUSTRATION ONLY: no commands were executed. All-zero bindings are unset; replace every result with observed evidence before use."
+  ]
+}
