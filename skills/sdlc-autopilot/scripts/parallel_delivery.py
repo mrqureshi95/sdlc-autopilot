@@ -83,13 +83,13 @@ def load(path):
     return result
 
 
-def git(root, *args):
+def git(root, *args, input_bytes=None):
     # Disable hooks/fsmonitor/external diff; do not run project code or expose Git stderr.
     env = {key: value for key, value in os.environ.items() if not key.startswith('GIT_')}
     env.update(GIT_OPTIONAL_LOCKS='0', GIT_TERMINAL_PROMPT='0', GIT_CONFIG_NOSYSTEM='1')
     try:
         result = subprocess.run(['git', '-C', str(root), '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null',
-                                 *args], capture_output=True, env=env, timeout=30)
+                                 *args], input=input_bytes, capture_output=True, env=env, timeout=30)
     except (OSError, subprocess.TimeoutExpired):
         raise Rejected('Git verification unavailable or timed out.') from None
     require(result.returncode == 0, 'Git verification failed.')
@@ -108,11 +108,46 @@ def commit(root, value):
     require(git(root, 'rev-parse', '--verify', value + '^{commit}').lower() == value.lower(), 'Expected an existing commit.')
 
 
+def required_checks(task):
+    checks = task.get('required_checks')
+    require(isinstance(checks, list) and bool(checks), 'Task requires named and typed checks.')
+    result = {}
+    for check in checks:
+        require(isinstance(check, dict) and text(check.get('name')) and isinstance(check.get('kind'), str) and
+                check['kind'] in KINDS, 'Required checks must bind names to supported kinds.')
+        require(check['name'] not in result, 'Duplicate required check name.')
+        result[check['name']] = check['kind']
+    return result
+
+
+def worker_local(task, value):
+    # Resolve aliases above the checkout (/tmp on macOS), preserving every
+    # component below the checkout so evidence symlinks can still be rejected.
+    path = absolute(value)
+    worker = absolute(task['worktree']).resolve()
+    for ancestor in reversed(path.parents):
+        if ancestor.resolve() == worker:
+            return worker / path.relative_to(ancestor)
+    raise Rejected('Resource must be within its worker checkout.')
+
+
 def worker_state(task, common, expected):
     worker, worker_common = repository(task['worktree'])
     require(worker_common == common, 'Worker must share the repository Git common directory.')
     require(git(worker, 'symbolic-ref', '--quiet', '--short', 'HEAD') == task['branch'], 'Worker is not on its assigned branch.')
     require(git(worker, 'rev-parse', 'HEAD').lower() == expected.lower(), 'Worker HEAD does not match the required commit.')
+    index = git(worker, 'ls-files', '-v', '--stage', '-z').split('\0')
+    require(all(row.startswith('H ') and not row.startswith('H 160000 ') for row in index if row),
+            'Hidden index flags, sparse checkouts and submodules are unsupported.')
+    paths = [row.split('\t', 1)[1] for row in index if row]
+    attributes = git(worker, 'check-attr', '-z', '--stdin', 'filter',
+                     input_bytes=('\0'.join(paths) + '\0').encode()).split('\0')
+    filter_keys = git(worker, 'config', '--null', '--name-only', '--list').lower().split('\0')
+    # A driver literally named 'unset'/'unspecified' is executable too; Git's
+    # attribute display uses the same strings for absent/disabled attributes.
+    require(all(value in {'unspecified', 'unset'} and not any(key.startswith('filter.' + value + '.') for key in filter_keys)
+                for value in attributes[2::3]),
+            'Active Git filters are unsupported: status could execute project code.')
     require(not git(worker, 'status', '--porcelain=v1', '--untracked-files=all', '--ignore-submodules=none'), 'Worker checkout must be clean.')
     return worker
 
@@ -150,11 +185,11 @@ def check_plan(plan, repo, live=False):
         require(worker != root and not inside(worker, root) and not inside(root, worker), 'Worker requires a separate checkout.')
         require(not any(worker == other or inside(worker, other) or inside(other, worker) for other in worktrees), 'Worker checkouts overlap.')
         worktrees.append(worker)
-        output = absolute(task.get('output_dir')).resolve()
+        output = worker_local(task, task.get('output_dir')).resolve()
         require(inside(output, worker) and '.git' not in output.relative_to(worker).parts, 'Output must be inside its worker checkout.')
         require(not any(output == other or inside(output, other) or inside(other, output) for other in outputs), 'Worker outputs overlap.')
         outputs.append(output)
-        strings(task.get('required_checks'), 'required checks')
+        required_checks(task)
         if live:
             worker_state(task, common, plan['base'])
     return root, common
@@ -164,8 +199,8 @@ def evidence(task, record):
     declared = record.get('evidence')
     require(text(declared) and '\\' not in declared and '..' not in Path(declared).parts, 'Invalid evidence path.')
     worker = Path(task['worktree']).resolve()
-    output = absolute(task['output_dir'])
-    target = Path(declared) if Path(declared).is_absolute() else output / declared
+    output = worker_local(task, task['output_dir'])
+    target = worker_local(task, declared) if Path(declared).is_absolute() else output / declared
     require(inside(output, worker) and inside(target, output), 'Evidence must be within worker output.')
     # Check each component, not only the final file: intermediate symlinks also escape.
     current = worker
@@ -207,6 +242,7 @@ def check_handoff(plan, report, repo):
                 not any(overlaps(name, shared) for shared in plan['shared_paths']), 'Committed changes exceed task ownership.')
     checks = report.get('checks')
     require(isinstance(checks, list) and bool(checks), 'Handoff requires checks.')
+    required = required_checks(task)
     names = set()
     for record in checks:
         require(isinstance(record, dict) and text(record.get('name')), 'Invalid handoff check.')
@@ -215,10 +251,11 @@ def check_handoff(plan, report, repo):
         require(isinstance(record.get('kind'), str) and record['kind'] in KINDS, 'Unsupported check kind.')
         require(record.get('status') == 'passed' and integer(record.get('exit_code')) and record['exit_code'] == 0,
                 'All checks must declare passed with exit code zero.')
+        require(record['name'] not in required or record['kind'] == required[record['name']], 'Required check kind does not match the plan.')
         if record['kind'] == 'test':
             require(integer(record.get('tests')) and record['tests'] > 0, 'Test evidence requires a positive test count.')
         evidence(task, record)
-    require(set(task['required_checks']).issubset(names), 'Required checks are missing.')
+    require(set(required).issubset(names), 'Required checks are missing.')
     return {'task': task['id'], 'candidate': candidate, 'changed_paths': len(changed), 'checks': len(names)}
 
 

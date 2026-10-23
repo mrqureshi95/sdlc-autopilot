@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import shlex
 from pathlib import Path
 import subprocess
 import sys
@@ -38,7 +39,7 @@ class ParallelDeliveryTests(unittest.TestCase):
                            worktree=str(self.workers[i]), branch='codex/worker-' + str(i),
                            ports=[5100 + i], database='fixture_' + letter,
                            output_dir=str(self.workers[i] / '.agent-output'),
-                           required_checks=['behavior', 'build']) for i, letter in enumerate(('a', 'b'))]
+                           required_checks=[{'name': 'behavior', 'kind': 'test'}, {'name': 'build', 'kind': 'build'}]) for i, letter in enumerate(('a', 'b'))]
         }
         self.plan_file = self.directory / 'plan.json'
         self.report_file = self.directory / 'handoff.json'
@@ -143,7 +144,8 @@ class ParallelDeliveryTests(unittest.TestCase):
         self.plan['tasks'][0]['ports'] = []
         for key, value in [('database', ''), ('worktree', 'relative'), ('output_dir', str(self.directory)),
                            ('output_dir', str(self.workers[0])), ('required_checks', []),
-                           ('required_checks', ['build', 'build']), ('required_checks', [True]), ('branch', '-option')]:
+                           ('required_checks', [{'name': 'build', 'kind': 'build'}, {'name': 'build', 'kind': 'test'}]),
+                           ('required_checks', ['build']), ('required_checks', [{'name': 'behavior', 'kind': 'tests'}]), ('required_checks', [True]), ('branch', '-option')]:
             with self.subTest(key=key):
                 previous = self.plan['tasks'][0][key]
                 self.plan['tasks'][0][key] = value
@@ -280,6 +282,73 @@ class ParallelDeliveryTests(unittest.TestCase):
         self.assertTrue(result.stdout.strip(), result.stderr)
         self.assertEqual(json.loads(result.stdout)['status'], 'fail')
         self.assertNotIn('SECRET_ARGUMENT', result.stdout)
+
+    def test_live_rejects_filters_before_git_status_can_execute_them(self):
+        marker = self.directory / 'filter executed'
+        script = self.write(self.directory, 'clean filter.py',
+                            'import pathlib,sys\npathlib.Path(' + repr(str(marker)) + ').write_text("ran")\nsys.stdout.write(sys.stdin.read())\n')
+        self.git('config', 'filter.fixture.clean', shlex.quote(sys.executable) + ' ' + shlex.quote(str(script)))
+        self.write(self.repo, '.git/info/attributes', 'src/a/start.txt filter=fixture\n')
+        self.write(self.workers[0], 'src/a/start.txt', 'evil A\n')
+        self.denied(live=True)
+        self.assertFalse(marker.exists(), 'Read-only validation executed the configured filter')
+
+    def test_attribute_sentinel_names_cannot_hide_active_filter_drivers(self):
+        marker = self.directory / 'sentinel filter executed'
+        script = self.write(self.directory, 'sentinel filter.py',
+                            'import pathlib,sys\npathlib.Path(' + repr(str(marker)) + ').write_text("ran")\nsys.stdout.write(sys.stdin.read())\n')
+        for driver in ('unset', 'unspecified'):
+            with self.subTest(driver=driver):
+                marker.unlink(missing_ok=True)
+                self.git('config', 'filter.' + driver + '.clean', shlex.quote(sys.executable) + ' ' + shlex.quote(str(script)))
+                self.write(self.repo, '.git/info/attributes', 'src/a/start.txt filter=' + driver + '\n')
+                self.write(self.workers[0], 'src/a/start.txt', 'evil A\n')
+                self.denied(live=True)
+                self.assertFalse(marker.exists(), 'Attribute sentinel string hid executable filter')
+
+    def test_inactive_configured_filter_does_not_block_clean_workers(self):
+        marker = self.directory / 'inactive filter executed'
+        self.git('config', 'filter.inactive.clean', 'touch ' + shlex.quote(str(marker)))
+        self.assertEqual(self.check(live=True)[0], 0)
+        self.assertFalse(marker.exists())
+
+    def test_handoff_rejects_assume_unchanged_and_skip_worktree(self):
+        report = self.ready()
+        worker = self.workers[0]
+        for flag in ('assume-unchanged', 'skip-worktree'):
+            with self.subTest(flag=flag):
+                self.git('update-index', '--' + flag, 'src/a/start.txt', cwd=worker)
+                self.write(worker, 'src/a/start.txt', 'evil A\n')
+                try:
+                    self.denied(command='check-handoff', report=report)
+                finally:
+                    self.write(worker, 'src/a/start.txt', 'base A\n')
+                    self.git('update-index', '--no-' + flag, 'src/a/start.txt', cwd=worker)
+
+    def test_handoff_cannot_downgrade_required_test_to_lint(self):
+        report = self.ready()
+        report['checks'][0]['kind'] = 'lint'
+        report['checks'][0]['tests'] = 0
+        self.denied(command='check-handoff', report=report)
+
+    def test_plan_binds_required_names_to_kinds(self):
+        for task in self.plan['tasks']:
+            task['required_checks'] = [{'name': 'behavior', 'kind': 'test'}, {'name': 'build', 'kind': 'build'}]
+        self.assertEqual(self.check(live=True)[0], 0)
+
+    def test_symlink_alias_of_worker_root_supports_relative_and_absolute_evidence(self):
+        report = self.ready()
+        alias = self.directory / 'worker alias'
+        alias.symlink_to(self.workers[0], target_is_directory=True)
+        task = self.plan['tasks'][0]
+        task['worktree'] = str(alias)
+        task['output_dir'] = str(alias / '.agent-output')
+        self.assertEqual(self.check('check-handoff', report)[0], 0)
+        for check in report['checks']:
+            check['evidence'] = str(alias / '.agent-output' / check['evidence'])
+        self.assertEqual(self.check('check-handoff', report)[0], 0)
+        task['worktree'] = str(self.workers[0])
+        self.assertEqual(self.check('check-handoff', report)[0], 0)
 
     def test_duplicate_json_keys_and_invalid_json_rejected_without_echoing_payload(self):
         self.denied(raw='{"version":1,"version":1}')
