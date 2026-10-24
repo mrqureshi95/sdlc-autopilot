@@ -129,6 +129,12 @@ whole repository. `scripts/detect-toolchain.sh` inventories explicit projects;
 `scripts/run-gates.sh` runs reviewed `.sdlc-checks.json` commands with timeouts.
 See `references/evidence.md` for configuration, scope, states, and examples.
 
+Before an expensive run, check cheap prerequisites that could invalidate it:
+execution permissions, selected runtime/dependencies, fixture versions, required
+services and resource headroom. Use existing project checks where available.
+After failure, preserve the result and diagnose with the smallest useful check;
+another whole run needs a concrete correction or new diagnostic reason.
+
 Run the affected checks once after the final relevant edits. Repeat only for new
 changes, failures, or unresolved concerns. Review relevant null/empty/malformed,
 authorization, timeout/retry, concurrency, compatibility, accessibility, and
