@@ -9,7 +9,9 @@ otherwise; no model ranking is required.
 ## Plan the boundary before dispatch
 
 Keep one canonical acceptance gate and one integrator. Start with one or two
-bounded workers. The integrator records the actual specification/design sources,
+bounded workers; use one builder plus review when the remaining work is coupled.
+Add a worker only for a separable task that can shorten the critical path.
+The integrator records the actual specification/design sources,
 acceptance criteria, dependency order, shared interfaces, and relevant edge cases
 in the project's existing task/issue system. A worker cannot infer new product
 requirements from its own implementation. Split independent work inside a gate;
@@ -123,6 +125,23 @@ all-zero SHA values mean **unset**, and the examples are not accepted run eviden
 
 ## Avoid repeated work; recover honestly
 
+Give expensive CPU/database/browser checks one explicit owner and an exclusive
+window when resources are shared. Other workers can edit unrelated inputs or
+review during that window; freeze inputs used by the running acceptance check.
+Before starting, verify cheap prerequisites in the actual execution context and
+state the acceptance question the run resolves. Do not add per-worker whole suites,
+duplicate reviews, new reporting systems or out-of-scope features merely to keep
+agents busy.
+
+After a failed expensive run, retain the native result and classify the first
+useful failure as product, fixture, environment, interruption or unknown. Group
+failures sharing a setup cause before treating them as separate defects. If
+continuing cannot answer a useful diagnostic question, stop only the owned run
+and retain its incomplete status. Before repeating the whole command, explain
+what changed or which new hypothesis it will test; ordinarily qualify a correction
+with the focused reproduction and affected checks first. Do not relax assertions,
+security controls or product deadlines simply to obtain green results.
+
 Reuse existing evidence only when the tested source, dependencies, environment,
 command/configuration and relevant consumers still match. Say what was reused and
 why it applies. A source edit, changed dependency or integration conflict invalidates
@@ -133,11 +152,20 @@ device/provider/browser/restore and qualified human obligations explicitly pendi
 host tests or emulator results do not establish them.
 
 On interruption retain worktrees, commits, logs, owned resources and blockers. On
-resume inspect actual Git state, task ownership, candidate and resource availability;
+resume inspect whether the original process is still running before dispatching
+a replacement: a model/session limit does not establish that a test stopped.
+Inspect actual Git state, task ownership, candidate and resource availability;
 recheck applicable bindings and rerun only affected/missing checks. Never reuse an
 interrupted report as success or kill another task's services. Clean up only owned
-resources after integration and preservation. Track accepted delivery time, rework,
-integration failures and escaped defects during a small pilot before adding workers.
+resources after integration and preservation. Track accepted delivery time, critical
+path, test/rework time, coordination and escaped defects during a small pilot.
+Agent counts and repeated passing cases do not establish acceleration; compare
+similar accepted work before claiming a speedup or adding workers.
+
+For a recurring observed failure, add the smallest useful prevention to the
+existing project checks or this guidance, then verify that it addresses that
+failure. Keep project-specific versions and commands in project policy. Retire
+redundant guidance rather than accumulating a universal checklist after every run.
 
 The [builder](../assets/parallel-delivery/builder.toml) and
 [reviewer](../assets/parallel-delivery/reviewer.toml) files are optional Codex agent
