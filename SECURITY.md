@@ -66,3 +66,21 @@ override to remove the sprintf-js advisory chain introduced by Jest. Its actual
 YAML-loading API is exercised by `check-runner-adapters.py`. Recheck the lockfile
 with npm audit when updating dependencies; never apply a forced major downgrade
 merely because an advisory tool suggests it.
+
+### Evaluation dependency review — 31 October 2026
+
+The evaluation runtime additionally pins `glob` 14.0.2 and `minimatch` 11.0.1
+through explicit overrides for
+[GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4)
+and [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249).
+These cross upstream dependency ranges, so native runner controls also exercise
+Jest coverage and `test-exclude` include/exclude plus synchronous/asynchronous
+file discovery. Retain those compatibility checks when revisiting the overrides.
+
+The remaining [deepmerge advisory](https://github.com/advisories/GHSA-gcqx-w48m-w2h4)
+is low severity and has no upstream patched version at this checkpoint. It remains
+in Jest's evaluation-only configuration dependency chain; no exemption or audit
+suppression is configured. Use trusted evaluation configuration and patches,
+without credentials, and separate isolation for adversarial inputs. The existing
+moderate-or-higher audit gate remains unchanged. Passing it is not a zero-advisory
+or comprehensive security claim; reassess when an upstream fix becomes available.

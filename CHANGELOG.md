@@ -2,6 +2,34 @@
 
 ## [Unreleased]
 
+### Added
+- Optional, explicitly authorized parallel delivery with one integrator, bounded
+  worker ownership, separate resources, review and integration handoffs.
+- Bundled task-plan/handoff examples, optional Codex worker/reviewer templates,
+  and a read-only `parallel_delivery.py` checker with behavioral regressions.
+  The checker validates declared bindings; it does not dispatch agents, execute
+  tests, enforce a sandbox, or attest that reports are truthful.
+
+### Changed
+- Check cheap prerequisites before expensive validation. After a failure,
+  diagnose and qualify a correction with focused checks before repeating whole
+  suites. Reuse evidence only while its source, environment and scope match;
+  inspect running processes and ownership before resuming interrupted work.
+- Align the README, design guidance and field guide with these additions;
+  distinguish current `main` from the unchanged v2.0.0 release archive.
+
+### Fixed
+- Lock the evaluation runtime to patched `body-parser` 2.4.0.
+- Pin evaluation-only `glob` 14.0.2 and `minimatch` 11.0.1 for newly reported
+  advisories, with real Jest coverage and file-discovery compatibility controls.
+  Regenerate optional WASI peer dependency records with CI's npm version for
+  consistent clean installs on Linux and macOS.
+  Document the remaining unpatched low-severity `deepmerge` advisory in
+  [the security policy](SECURITY.md#evaluation-dependency-review--31-october-2026);
+  keep the existing audit threshold unchanged.
+- Harden parallel handoff validation against Git filters and hidden source edits;
+  bind required check kinds and retained evidence to committed candidates.
+
 ## [2.0.0] - 2026-10-21
 
 ### Breaking changes

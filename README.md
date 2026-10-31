@@ -44,6 +44,8 @@ To try an uncommitted local revision, point the agent directly to
 an explicit whole-package reinstall/copy through the host's supported workflow.
 Repository source is canonical. Installed copies are independent and require a complete
 package update; inspect `metadata.version` in the installed SKILL.md to confirm it.
+For updates between tagged releases, compare the complete package with the chosen
+Git commit as well; the version field alone does not identify those changes.
 Version 2.0.0 changes helper verification/exit contracts; see the [changelog](CHANGELOG.md).
 
 Example requests:
@@ -71,6 +73,23 @@ model review is opt-in for a named destination and scoped redacted payload.
 Deployment requires actual authority for the exact environment/action; no generic
 rollback or cleanup recipes are executed.
 
+### Optional parallel delivery
+
+When delegation is explicitly authorized, the
+[parallel-delivery guide](skills/sdlc-autopilot/references/parallel-delivery.md)
+adds one integrator, one or two bounded workers, disjoint path ownership, isolated
+resources, and review before integration. Bundled plan/handoff examples and a
+read-only checker validate declared Git, ownership and retained-evidence bindings.
+They do not dispatch agents, sandbox workers, run tests, or prove reports truthful.
+The builder/reviewer TOML files are optional Codex templates; other hosts can use
+the same provider-neutral task and handoff contract.
+
+Before expensive validation, check prerequisites and resource ownership. After a
+failure, retain the result, diagnose the first useful cause, and qualify the fix
+with focused checks before repeating the full run. Reuse evidence only when its
+source, dependencies, environment and relevant scope still match. On resumption,
+check whether an owned process is still running before starting its replacement.
+
 ## Evidence helpers
 
 Python 3.10+, Git, and a POSIX host are required for runtime helpers. Node 22+ is
@@ -84,7 +103,14 @@ skills/sdlc-autopilot/
   references/self-verification.md
   references/deep-audit.md
   references/deployment.md
+  references/parallel-delivery.md
+  assets/parallel-delivery/
+    task-plan.example.json
+    handoff.example.json
+    builder.toml
+    reviewer.toml
   scripts/evidence.py
+  scripts/parallel_delivery.py
   scripts/node-test-reporter.mjs
   scripts/detect-toolchain.sh
   scripts/run-gates.sh
@@ -174,6 +200,17 @@ eight controlled original-versus-revised helper comparisons. Reproduce those wit
 `python3 scripts/compare-verifiers.py`; these are not live-agent outcome statistics.
 
 ## Public release readiness
+
+The latest tagged release is **v2.0.0**. The default `main` branch additionally
+contains the parallel-delivery controls, validation-efficiency guidance and
+evaluation dependency patch listed under [Unreleased](CHANGELOG.md#unreleased).
+Installing from the repository's default branch includes those changes; the
+v2.0.0 release archive remains the original tagged package.
+
+The [security policy](SECURITY.md#evaluation-dependency-review--31-october-2026)
+records current evaluation dependency fixes, compatibility checks and the remaining
+unpatched low-severity advisory. These evaluation dependencies are separate from
+the installable skill package.
 
 Version **2.0.0** provides provider-neutral guidance and explicit local evidence
 helpers. See [release notes](docs/releases/v2.0.0.md), the [prepublication audit](docs/release-readiness.md),
