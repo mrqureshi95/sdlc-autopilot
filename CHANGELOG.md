@@ -22,6 +22,8 @@
 - Lock the evaluation runtime to patched `body-parser` 2.4.0.
 - Pin evaluation-only `glob` 14.0.2 and `minimatch` 11.0.1 for newly reported
   advisories, with real Jest coverage and file-discovery compatibility controls.
+  Regenerate optional WASI peer dependency records with CI's npm version for
+  consistent clean installs on Linux and macOS.
   Document the remaining unpatched low-severity `deepmerge` advisory in
   [the security policy](SECURITY.md#evaluation-dependency-review--31-october-2026);
   keep the existing audit threshold unchanged.
