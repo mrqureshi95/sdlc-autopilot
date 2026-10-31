@@ -24,6 +24,22 @@ Fix introduced defects. Triage unrelated/pre-existing findings without silently
 rewriting the user's project. Preserve user edits and stop safely without arbitrary
 reversion or stashing. Honor existing authorization and host permissions.
 
+Check cheap prerequisites before expensive validation, and give shared resources
+one explicit owner. Preserve failed results, isolate their cause with focused
+checks, and repeat a whole run only after a concrete correction or for a new
+diagnostic question. Evidence reuse requires matching source, dependencies,
+environment and relevant scope; interrupted checks remain incomplete.
+
+## Optional parallel delivery
+
+Explicitly authorized delegation follows the
+[parallel-delivery contract](skills/sdlc-autopilot/references/parallel-delivery.md):
+one integrator, bounded workers, disjoint ownership, separate resources and review
+before combined verification. Templates and the read-only checker validate declared
+bindings; they do not orchestrate agents, enforce isolation or attest execution.
+Codex configuration examples are optional; the task/handoff contract is provider-neutral.
+On resume, inspect actual Git, process and resource state before replacing work.
+
 ## Evidence and trust
 
 A skill changes decisions. Enforceable controls live in repository checks, CI,
