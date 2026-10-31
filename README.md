@@ -207,6 +207,11 @@ evaluation dependency patch listed under [Unreleased](CHANGELOG.md#unreleased).
 Installing from the repository's default branch includes those changes; the
 v2.0.0 release archive remains the original tagged package.
 
+The [security policy](SECURITY.md#evaluation-dependency-review--31-october-2026)
+records current evaluation dependency fixes, compatibility checks and the remaining
+unpatched low-severity advisory. These evaluation dependencies are separate from
+the installable skill package.
+
 Version **2.0.0** provides provider-neutral guidance and explicit local evidence
 helpers. See [release notes](docs/releases/v2.0.0.md), the [prepublication audit](docs/release-readiness.md),
 and [GitHub Actions](https://github.com/mrqureshi95/sdlc-autopilot/actions/workflows/validate.yml)

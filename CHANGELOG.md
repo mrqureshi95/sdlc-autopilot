@@ -20,6 +20,11 @@
 
 ### Fixed
 - Lock the evaluation runtime to patched `body-parser` 2.4.0.
+- Pin evaluation-only `glob` 14.0.2 and `minimatch` 11.0.1 for newly reported
+  advisories, with real Jest coverage and file-discovery compatibility controls.
+  Document the remaining unpatched low-severity `deepmerge` advisory in
+  [the security policy](SECURITY.md#evaluation-dependency-review--31-october-2026);
+  keep the existing audit threshold unchanged.
 - Harden parallel handoff validation against Git filters and hidden source edits;
   bind required check kinds and retained evidence to committed candidates.
 

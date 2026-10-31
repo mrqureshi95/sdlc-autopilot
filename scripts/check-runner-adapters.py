@@ -23,8 +23,25 @@ with tempfile.TemporaryDirectory(prefix='sdlc actual runners ') as temp:
     yaml_control="const assert=require('node:assert/strict'); const {loadNycConfig}=require("+json.dumps(str(runtime/'node_modules/@istanbuljs/load-nyc-config'))+"); loadNycConfig({cwd:process.cwd()}).then(c=>{assert.equal(c.all,true);assert.deepEqual(c.exclude,['generated/**'])}).catch(()=>process.exit(1));"
     control=e.execute(['node','-e',yaml_control],root,30)
     if control['returncode'] or control.get('error'): raise SystemExit('Pinned YAML override compatibility failed')
+    # Exercise the include/exclude and sync/async glob APIs after security overrides.
+    (root/'src/excluded').mkdir(parents=True)
+    (root/'src/included.js').write_text('module.exports = 4;\n')
+    (root/'src/excluded/ignored.js').write_text('module.exports = 0;\n')
+    exclude_control="""
+const assert=require('node:assert/strict');
+const path=require('node:path');
+const TestExclude=require('test-exclude');
+const filter=new TestExclude({cwd:process.cwd(),include:['src/**/*.js'],exclude:['src/excluded/**']});
+assert.equal(filter.shouldInstrument(path.resolve('src/included.js')),true);
+assert.equal(filter.shouldInstrument(path.resolve('src/excluded/ignored.js')),false);
+const normalize=files=>files.map(file=>file.replaceAll('\\\\','/')).sort();
+assert.deepEqual(normalize(filter.globSync()),['src/included.js']);
+filter.glob().then(files=>assert.deepEqual(normalize(files),['src/included.js'])).catch(error=>{console.error(error);process.exitCode=1});
+"""
+    control=e.execute(['node','-e',exclude_control],root,30)
+    if control['returncode'] or control.get('error'): raise SystemExit('Pinned glob/minimatch override compatibility failed: '+control.get('stderr',''))
     for runner,baseargv,filename in [
-        ('jest-json',['node',str(jest),'--runInBand','--config',json.dumps({'testMatch':['**/sample.test.cjs']})],'sample.test.cjs'),
+        ('jest-json',['node',str(jest),'--runInBand','--coverage','--config',json.dumps({'testMatch':['**/sample.test.cjs'],'collectCoverageFrom':['src/**/*.js']})],'sample.test.cjs'),
         ('vitest-json',['node',str(vitest)],'sample.test.js'),
         ('junit',['node',str(vitest),'run','--reporter=junit','--outputFile={report}'],'sample.test.js')]:
         for label,source,expected in [
